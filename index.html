@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Notes in Public</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF0F4; --panel:#FFFFFF; --panel-2:#F5F7FA;
+  --ink:#12161F; --ink-2:#4A5568; --ink-3:#7C8797;
+  --rule:#D9DEE6; --rule-2:#C3CAD6;
+  --volt:#6B4EFF; --curr:#E08A16; --spike:#F0455C; --ok:#1B9A6B;
+  --r:10px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1117; --panel:#161A22; --panel-2:#1C212B;
+    --ink:#E8ECF2; --ink-2:#A3AEBF; --ink-3:#6F7B8D;
+    --rule:#262C38; --rule-2:#333B4A;
+    --volt:#9585FF; --curr:#F0A93A; --spike:#FF6B7D; --ok:#3FCB96;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1117; --panel:#161A22; --panel-2:#1C212B;
+  --ink:#E8ECF2; --ink-2:#A3AEBF; --ink-3:#6F7B8D;
+  --rule:#262C38; --rule-2:#333B4A;
+  --volt:#9585FF; --curr:#F0A93A; --spike:#FF6B7D; --ok:#3FCB96;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(64px + env(safe-area-inset-top,0px));-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:'Space Grotesk',system-ui,-apple-system,sans-serif;
+  font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--volt);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- chrome ---------- */
+.bar{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:50;
+  background:color-mix(in srgb,var(--paper) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--rule);
+}
+.bar-in{max-width:1080px;margin:0 auto;padding:0 20px;height:60px;display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:-.02em;font-size:15px;text-decoration:none}
+.brand svg{display:block}
+.crumb{color:var(--ink-3);font-size:14px;display:flex;align-items:center;gap:8px;min-width:0}
+.crumb b{color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp{flex:1}
+.icon-btn{background:none;border:1px solid var(--rule);width:34px;height:34px;border-radius:8px;display:grid;place-items:center;color:var(--ink-2)}
+.icon-btn:hover{border-color:var(--rule-2);color:var(--ink)}
+
+main{max-width:1080px;margin:0 auto;padding:0 20px 80px}
+.wrap{max-width:720px}
+
+/* ---------- hero ---------- */
+.hero{padding:56px 0 40px;border-bottom:1px solid var(--rule);margin-bottom:40px}
+.hero h1{font-size:clamp(34px,6vw,52px);line-height:1.04;letter-spacing:-.035em;margin:0 0 14px;font-weight:700;max-width:16ch}
+.hero p{font-family:'Source Serif 4',Georgia,serif;font-size:18px;line-height:1.6;color:var(--ink-2);margin:0;max-width:56ch}
+.trace-box{margin:34px 0 0;background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:18px 16px 12px;overflow:hidden}
+.trace-lab{display:flex;gap:18px;font-size:12px;color:var(--ink-3);margin-top:8px;flex-wrap:wrap}
+.trace-lab i{display:inline-block;width:16px;height:3px;border-radius:2px;margin-right:6px;vertical-align:2px;font-style:normal}
+.dash{stroke-dasharray:5 4}
+.draw{stroke-dasharray:3000;stroke-dashoffset:3000;animation:draw 2.4s cubic-bezier(.4,0,.2,1) .25s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.pop{opacity:0;animation:pop .35s ease forwards}
+@keyframes pop{to{opacity:1}}
+
+/* ---------- lists ---------- */
+h2.sec{font-size:13px;font-weight:500;color:var(--ink-3);margin:0 0 16px;letter-spacing:.01em}
+.subj{display:grid;gap:14px;margin-bottom:44px}
+.card{
+  background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);
+  padding:22px;text-align:left;width:100%;display:block;
+  transition:border-color .15s,transform .15s;
+}
+.card:hover{border-color:var(--rule-2)}
+.card:active{transform:scale(.995)}
+.card h3{margin:0 0 6px;font-size:20px;letter-spacing:-.02em;font-weight:700}
+.card p{margin:0;color:var(--ink-2);font-size:14.5px;font-family:'Source Serif 4',Georgia,serif;line-height:1.55}
+.card .meta{margin-top:14px;display:flex;gap:16px;font-size:12.5px;color:var(--ink-3);align-items:center}
+
+.unit{display:flex;gap:18px;align-items:flex-start;background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:20px;text-align:left;width:100%;transition:border-color .15s}
+.unit:hover{border-color:var(--rule-2)}
+.unit-n{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:3px;white-space:nowrap}
+.unit h3{margin:0 0 5px;font-size:17.5px;letter-spacing:-.015em;font-weight:500}
+.unit p{margin:0;font-size:14px;color:var(--ink-2);font-family:'Source Serif 4',Georgia,serif}
+.pill{font-size:11.5px;color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 35%,transparent);padding:2px 8px;border-radius:20px;white-space:nowrap}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--rule);margin:26px 0 30px;position:sticky;top:calc(60px + env(safe-area-inset-top,0px));background:var(--paper);z-index:40;overflow-x:auto}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:11px 15px;color:var(--ink-3);font-size:14.5px;white-space:nowrap;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--volt);font-weight:500}
+
+/* ---------- notes ---------- */
+.notes{font-family:'Source Serif 4',Georgia,serif;font-size:17.5px;line-height:1.68;max-width:68ch}
+.notes h3{font-family:'Space Grotesk',sans-serif;font-size:21px;letter-spacing:-.02em;margin:42px 0 14px;font-weight:700;line-height:1.25}
+.notes h3:first-child{margin-top:0}
+.notes p{margin:0 0 18px}
+.notes strong{font-weight:600}
+.notes ul{margin:0 0 18px;padding-left:22px}
+.notes li{margin-bottom:8px}
+.eq{
+  font-family:'IBM Plex Mono',monospace;font-size:15px;line-height:1.7;
+  background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--volt);
+  border-radius:0 var(--r) var(--r) 0;padding:16px 18px;margin:0 0 20px;overflow-x:auto;white-space:pre;
+}
+.eq em{color:var(--ink-3);font-style:normal;font-size:13.5px;font-family:'Space Grotesk',sans-serif}
+.note-box{background:var(--panel-2);border:1px solid var(--rule);border-radius:var(--r);padding:16px 18px;margin:0 0 20px;font-size:16px}
+.note-box p:last-child{margin-bottom:0}
+.note-box.warn{border-left:3px solid var(--spike);border-radius:0 var(--r) var(--r) 0}
+.tbl{width:100%;border-collapse:collapse;margin:0 0 22px;font-family:'Space Grotesk',sans-serif;font-size:14.5px;display:block;overflow-x:auto}
+.tbl th{text-align:left;font-weight:500;color:var(--ink-3);padding:8px 14px 8px 0;border-bottom:1px solid var(--rule-2);font-size:13px}
+.tbl td{padding:9px 14px 9px 0;border-bottom:1px solid var(--rule)}
+.tbl code{font-family:'IBM Plex Mono',monospace;font-size:13px}
+
+/* ---------- widgets ---------- */
+.w{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:20px;margin:0 0 24px;font-family:'Space Grotesk',sans-serif}
+.w-t{font-size:13px;color:var(--ink-3);margin:0 0 14px}
+.ctl{display:flex;align-items:center;gap:12px;margin-top:12px;font-size:13.5px;color:var(--ink-2)}
+.ctl label{min-width:92px}
+.ctl input[type=range]{flex:1;accent-color:var(--volt);min-width:0}
+.ctl output{min-width:58px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
+.stat{background:var(--panel-2);border-radius:8px;padding:12px}
+.stat span{display:block;font-size:11.5px;color:var(--ink-3)}
+.stat b{font-size:20px;font-weight:500;font-family:'IBM Plex Mono',monospace}
+
+/* ---------- quiz ---------- */
+.q{max-width:620px}
+.q-top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--ink-3);margin-bottom:8px}
+.q-bar{height:2px;background:var(--rule);border-radius:2px;overflow:hidden;margin-bottom:28px}
+.q-bar i{display:block;height:100%;background:var(--volt);transition:width .3s}
+.q-p{font-size:19px;line-height:1.45;margin:0 0 22px;letter-spacing:-.01em}
+.opt{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:14px 16px;margin-bottom:9px;font-size:15px;transition:border-color .15s}
+.opt:hover:not(:disabled){border-color:var(--rule-2)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--panel))}
+.opt.wrong{border-color:var(--spike);background:color-mix(in srgb,var(--spike) 8%,var(--panel))}
+.expl{background:var(--panel-2);border-radius:var(--r);padding:16px 18px;margin-top:16px;font-family:'Source Serif 4',Georgia,serif;font-size:15.5px;line-height:1.6}
+.expl b{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:14.5px}
+.hint{background:none;border:0;color:var(--ink-3);font-size:13.5px;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.btn{background:var(--ink);color:var(--paper);border:0;border-radius:8px;padding:11px 20px;font-size:14.5px;font-weight:500;margin-top:18px}
+.btn.ghost{background:none;border:1px solid var(--rule-2);color:var(--ink)}
+.score{text-align:center;padding:40px 0}
+.score b{display:block;font-size:56px;font-family:'IBM Plex Mono',monospace;font-weight:500;letter-spacing:-.03em}
+.score p{color:var(--ink-2);font-family:'Source Serif 4',Georgia,serif;margin:6px 0 0}
+
+/* ---------- flashcards ---------- */
+.fc-wrap{max-width:560px}
+.fc{
+  background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);
+  min-height:260px;padding:32px;display:flex;flex-direction:column;justify-content:center;
+  text-align:center;cursor:pointer;position:relative;
+}
+.fc-side{font-size:11.5px;color:var(--ink-3);position:absolute;top:14px;left:18px}
+.fc-q{font-size:20px;line-height:1.4;letter-spacing:-.01em}
+.fc-a{font-family:'Source Serif 4',Georgia,serif;font-size:17px;line-height:1.6;color:var(--ink-2)}
+.fc-a .k{display:block;font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--ink);margin-bottom:12px}
+.fc-nav{display:flex;align-items:center;justify-content:space-between;margin-top:18px;font-size:13.5px;color:var(--ink-3)}
+.fc-nav button{background:none;border:1px solid var(--rule);border-radius:8px;padding:8px 16px;color:var(--ink-2)}
+.fc-nav button:disabled{opacity:.35;cursor:default}
+
+.empty{color:var(--ink-3);font-family:'Source Serif 4',Georgia,serif;padding:40px 0}
+footer{border-top:1px solid var(--rule);margin-top:60px;padding:24px 0;font-size:13px;color:var(--ink-3)}
+@media(max-width:640px){
+  .bar-in{padding:0 16px}main{padding:0 16px 60px}
+  .hero{padding:36px 0 28px}
+  .notes{font-size:17px}
+  .unit{gap:12px;padding:16px}
+  .fc{padding:24px;min-height:220px}
+}
+</style>
+</head>
+<body>
+
+<header class="bar"><div class="bar-in">
+  <a class="brand" href="#/" id="brand">
+    <svg width="22" height="18" viewBox="0 0 22 18" fill="none" aria-hidden="true">
+      <path d="M1 15 C4 15, 4 4, 7 4 L7 15 C10 15, 10 4, 13 4 L13 15 C16 15, 16 4, 19 4 L19 15" stroke="var(--volt)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M1 3 H21" stroke="var(--spike)" stroke-width="1.2" stroke-dasharray="3 3"/>
+    </svg>
+    <span>Notes in Public</span>
+  </a>
+  <div class="crumb" id="crumb"></div>
+  <div class="sp"></div>
+  <button class="icon-btn" id="theme" title="Switch theme" aria-label="Switch theme">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3.4" stroke="currentColor" stroke-width="1.4"/><path d="M8 .8v2M8 13.2v2M.8 8h2M13.2 8h2M2.9 2.9l1.4 1.4M11.7 11.7l1.4 1.4M13.1 2.9l-1.4 1.4M4.3 11.7l-1.4 1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+  </button>
+</div></header>
+
+<main id="app"></main>
+
+<script>
+/* ============================================================
+   CONTENT — add new subjects and units here.
+   ============================================================ */
+const SITE = {
+  title: "Notes in Public",
+  tagline: "Open study notes with live diagrams, quizzes and flashcards. Built while learning, shared as it goes.",
+  subjects: [{
+    id:"snn", title:"Spiking neural networks",
+    blurb:"Working through the maths behind event-driven networks, from the membrane equation to federated training.",
+    units:[{
+      id:"day2", n:"Day 2", title:"The CUBA LIF equations",
+      blurb:"How a spike becomes a current, a current becomes a voltage, and a voltage becomes the next spike.",
+      notes:[
+        {t:"h",v:"Three equations, and that's the whole neuron"},
+        {t:"p",v:"A spiking neuron looks complicated until you see that it runs the same three lines every timestep. Nothing else is needed to simulate it. Here they are in discrete time, which is what code actually runs."},
+        {t:"eq",v:"I[n+1] = α·I[n] + Σ W·S[n]\n<em>keep most of the old current, then add the weights of whoever just spiked</em>"},
+        {t:"eq",v:"U[n+1] = β·U[n] + I[n] − S[n]\n<em>keep most of the old voltage, add the current, and if you just fired, subtract 1</em>"},
+        {t:"eq",v:"S[n] = Θ(U[n] − ϑ)\n<em>fire if the voltage reached threshold</em>"},
+        {t:"p",v:"Throughout, the resting potential is 0, resistance is 1, and the threshold ϑ is 1. Those are normalisations, not physics — any other values can be absorbed by rescaling the weights."},
+
+        {t:"h",v:"Start with the voltage on its own"},
+        {t:"p",v:"Before any spiking, a leaky integrate-and-fire neuron is just a voltage being pulled in two directions. A leak drags it back toward rest. An input current pushes it away. Whichever is stronger at that moment decides which way it moves."},
+        {t:"eq",v:"τ_mem · dU/dt = −(U − U_rest) + R·I\n<em>the leak term grows as U climbs; the current term does not</em>"},
+        {t:"p",v:"That asymmetry is the interesting part. The current is fixed, but the leak gets stronger the further the voltage travels. Eventually they cancel and the voltage stops."},
+        {t:"widget",v:"lif"},
+        {t:"p",v:"Set the current low and the voltage flattens out below threshold and stays there forever. That is the leak winning. A perfect integrator would eventually fire on any positive input; this neuron will not. The grey line marks where it settles, which is exactly where the two terms are equal in size."},
+        {t:"p",v:"Push the current past 1.0 and the settling point moves above threshold, so the neuron fires before it can ever get there. Stronger input means a steeper climb and less time between spikes — that current-to-rate relationship is the spiking counterpart of an activation function."},
+        {t:"note",v:"<p><b>τ_mem is the neuron's memory span.</b> After one τ_mem the voltage has covered about 63% of the distance to wherever it is heading; after three, about 95%. Small τ_mem means a coincidence detector. Large τ_mem means an integrator.</p>"},
+
+        {t:"h",v:"Now the detour that makes it current-based"},
+        {t:"p",v:"Here is the thing most people get wrong on first reading. A spike does not touch the membrane voltage. It touches a current, and the current then charges the membrane. The weights W live in the current equation, not the voltage equation."},
+        {t:"eq",v:"spike  →  I  →  U  →  spike\n<em>two leaky stages in series, with two separate time constants</em>"},
+        {t:"p",v:"That detour is what \"current-based\" — CUBA — means, and it is the one sentence this whole topic is built around. Watch what it does to the shape of the signal:"},
+        {t:"widget",v:"cuba"},
+        {t:"p",v:"The input spikes are instant vertical lines. The current is jagged, jumping at each spike and decaying between them. The voltage is smoother still, with no sharp jumps at all. Each stage rounds off the signal once more."},
+        {t:"p",v:"Try τ_syn very small and each spike's charge vanishes before it can do anything. Try it large and charge from separate spikes piles up instead of decaying, so several weak inputs can add together and cross threshold. That is temporal summation, and it is why the second time constant earns its place."},
+        {t:"note",v:"<p><b>Plain LIF is the τ_syn → 0 limit of CUBA.</b> Current-based is not a different model. It is the same model with the assumption of instantaneous synapses relaxed. That is the cleanest way to state the relationship.</p>"},
+
+        {t:"h",v:"Why a spike produces a finite jump"},
+        {t:"p",v:"In continuous time a spike train is written as a sum of Dirac deltas, which have zero width and infinite height. It looks like that should blow up. It doesn't, because a delta is defined by its area, not its height — and area is what a rate equation integrates."},
+        {t:"p",v:"Think of a spike as a rectangular pulse of width ε and height h. During the pulse the current rises by roughly h·ε, which is the pulse's area. Now shrink ε toward zero while raising h to keep the area fixed at W. The pulse becomes infinitely tall and infinitely narrow, and the current still rises by exactly W. Only the sharpness changes."},
+        {t:"widget",v:"delta"},
+        {t:"p",v:"Formally: integrate the equation across a sliver of time around the spike. The decay term vanishes, because a finite quantity integrated over a shrinking window goes to zero. The delta term does not, because its area stays at 1 however narrow the window gets. What survives is a jump of exactly W."},
+        {t:"p",v:"Honestly, the discrete form makes this obvious without any of that. S[n] is just 0 or 1, so the sum is nothing more than \"add up the weights of whichever inputs fired.\" The delta notation is how you write that same idea when time is continuous."},
+
+        {t:"h",v:"The reset, and a discrepancy worth knowing"},
+        {t:"p",v:"The −S[n] term is the reset. If the neuron fired, subtract 1; otherwise subtract nothing. Note the subscript: this is the neuron's <strong>own</strong> output, not an input. Same symbol, different neuron, and an easy thing to blur when writing fast."},
+        {t:"p",v:"It is written as a subtraction rather than an assignment, which makes it a <strong>soft reset</strong>. If the voltage overshot to 1.08, subtraction leaves 0.08 behind; an assignment would discard it. Lava's CUBA implementation uses a hard reset instead, zeroing the voltage outright."},
+        {t:"widget",v:"reset"},
+        {t:"p",v:"At low input the two barely differ. Push the input higher and they separate, with different spike counts. So this is not a detail you can wave away if your paper says one thing and your code does the other."},
+
+        {t:"h",v:"Why this is secretly a recurrent network"},
+        {t:"p",v:"Look at what the state depends on. I[n+1] depends on I[n]. U[n+1] depends on U[n]. Every neuron carries state forward in time entirely on its own. That is the definition of a recurrent network, which means the whole thing unrolls in time and trains with backpropagation through time."},
+        {t:"p",v:"This holds even with no recurrent weights between neurons. There are two separate kinds of recurrence here: the explicit kind, where neurons in a layer talk to each other through a square weight matrix, and the implicit kind that lives inside each neuron's own state. Dropping the first does not remove the second."},
+        {t:"note",class:"warn",v:"<p><b>Where training breaks.</b> The spike function is a step, so its derivative is zero almost everywhere and undefined at the threshold. Backpropagation through it kills the gradient entirely. The fix is a surrogate gradient: substitute a smooth function's derivative in the backward pass only, leaving the forward pass a true binary spike.</p>"},
+
+        {t:"h",v:"One trap if you use Lava"},
+        {t:"p",v:"Lava's <code>current_decay</code> is the fraction that <strong>leaks away</strong>, not the fraction retained. The paper's α is the fraction retained. So they are opposites, and mixing them will make you state your time constants backwards."},
+        {t:"eq",v:"α = 1 − current_decay\nτ = −Δt / ln(1 − current_decay)"},
+        {t:"tbl",v:[["current_decay","retained (paper's α)","τ in units of Δt"],["0.10","0.90","≈ 9.5"],["0.25","0.75","≈ 3.5"],["0.50","0.50","≈ 1.4"],["1.00","0.00","0 — no memory at all"]]},
+        {t:"p",v:"That last row matters. Setting <code>current_decay = 1</code> removes the current stage entirely, which means you are running a plain LIF and not CUBA at all. Worth checking your config before claiming otherwise."}
+      ],
+      quiz:[
+        {q:"In I[n+1] = α·I[n] + Σ W·S[n], what does the sum actually compute at a given step?",
+         o:["The average firing rate of the layer below","The sum of the weights of only those inputs that fired at step n","The weighted sum of the membrane voltages below","The number of input neurons connected"],a:1,
+         h:"S[n] is either 0 or 1.",
+         e:"Since S[n] is 0 or 1, each term is either nothing or the full weight. The sum is a tally of the weights of whoever fired. Voltages from the layer below never enter — only their spikes do."},
+        {q:"In U[n+1] = β·U[n] + I[n] − S[n], whose spike is being subtracted?",
+         o:["The spikes of the layer below","The spikes of neighbouring neurons in the same layer","The neuron's own output spike","The spike of the readout layer"],a:2,
+         h:"What is this term physically doing to the neuron?",
+         e:"This is the reset. When a neuron fires, its own voltage drops back toward rest, so the subscript here is i, not j. Worth double-checking every time you write the equation out."},
+        {q:"A colleague says a spike from the layer below raises this neuron's voltage directly. In a CUBA model, is that right?",
+         o:["Yes, that is what the weight does","No — the spike raises the current first, which then charges the voltage","Yes, but only for positive weights","No — spikes only affect the threshold"],a:1,
+         h:"Which equation do the weights W appear in?",
+         e:"W appears in the current equation, not the voltage equation. The spike jumps I, and I feeds U on the next step. Two leaky stages in series. In a plain LIF the spike would indeed hit the voltage directly."},
+        {q:"You increase τ_mem. What happens to β, and what does that do to the neuron?",
+         o:["β shrinks; the neuron forgets faster","β grows; the neuron holds onto past input longer","β is unchanged; τ_mem only affects the threshold","β grows; the neuron fires less regardless of input"],a:1,
+         h:"A larger τ makes the exponent closer to zero.",
+         e:"A bigger τ_mem pushes the exponent toward 0, so β moves toward 1. Since β is the fraction retained each step, a β near 1 means very little leaks away — a long memory."},
+        {q:"Your Lava config has current_decay = 0.1. What is the paper's α?",
+         o:["0.1","0.9","10","exp(−0.1)"],a:1,
+         h:"Lava's decay is the fraction lost, not the fraction kept.",
+         e:"Lava's current_decay is what leaks away, so the retained fraction is 1 − 0.1 = 0.9. A small current_decay means a LONG memory, the opposite of what a small α would mean."},
+        {q:"Your network has no recurrent weights between neurons. Is it still a recurrent network?",
+         o:["No — without them it is purely feedforward","Yes — I and U carry state forward in time inside every neuron","Only if τ_mem is large enough","Only during training"],a:1,
+         h:"Look at what I[n] and U[n] depend on.",
+         e:"Two kinds of recurrence. The explicit kind between neurons is the V term. The implicit kind lives in each neuron's own state: I[n+1] depends on I[n], U[n+1] on U[n]. That persists regardless, so the network still unrolls in time and still needs BPTT."},
+        {q:"Why does S[n] = Θ(U[n] − ϑ) cause a problem for training?",
+         o:["It is too slow on a GPU","Its derivative is zero almost everywhere, so gradients cannot flow","It makes the network non-deterministic","It forces the voltage negative"],a:1,
+         h:"What is the slope of a step function?",
+         e:"A step is flat everywhere except at the threshold, where it is undefined. Flat means zero derivative, so backpropagation through it kills the gradient. The fix is a surrogate gradient in the backward pass only."}
+      ],
+      cards:[
+        {f:"The current update",b:"<span class='k'>I[n+1] = α·I[n] + Σ W·S[n]</span>Keep most of the old current, then add the weights of whoever just spiked."},
+        {f:"The voltage update",b:"<span class='k'>U[n+1] = β·U[n] + I[n] − S[n]</span>Keep most of the old voltage, add the current, and if you just fired, subtract 1."},
+        {f:"The spike condition",b:"<span class='k'>S[n] = Θ(U[n] − ϑ)</span>Fire if the voltage reached threshold. Θ outputs 1 when the inside is ≥ 0."},
+        {f:"What does α mean, and where does it come from?",b:"<span class='k'>α = exp(−Δt / τ_syn)</span>The fraction of synaptic current that survives one timestep. Always between 0 and 1. Bigger τ_syn gives bigger α, meaning a longer memory."},
+        {f:"What does β mean, and where does it come from?",b:"<span class='k'>β = exp(−Δt / τ_mem)</span>The fraction of membrane voltage that survives one timestep. τ_mem is the neuron's memory span."},
+        {f:"What does \"current-based\" (CUBA) actually mean?",b:"A spike does not touch the membrane voltage directly. It jumps a synaptic current, and the current then charges the membrane. Two leaky stages in series, with two separate time constants."},
+        {f:"Plain LIF versus CUBA in one sentence",b:"Plain LIF is the τ_syn → 0 limit of CUBA. Same model, with the instantaneous-synapse assumption relaxed."},
+        {f:"Where does the voltage settle under constant input?",b:"<span class='k'>U = U_rest + R·I</span>The point where the leak exactly cancels the drive. The neuron only ever fires if R·I exceeds the threshold."},
+        {f:"Why does a Dirac delta produce a finite jump?",b:"A delta is defined by its area, not its height. Integrating the equation across the spike, the decay term vanishes but the delta contributes its full area — a jump of exactly W."},
+        {f:"Is an SNN with no recurrent weights still an RNN?",b:"Yes. I[n+1] depends on I[n] and U[n+1] on U[n], so every neuron carries state forward in time on its own. Explicit recurrence between neurons is a separate thing."},
+        {f:"Where exactly does training break, and what fixes it?",b:"At the spike function. A step has zero derivative almost everywhere, so gradients cannot flow back through it. A surrogate gradient substitutes a smooth derivative in the backward pass only."},
+        {f:"Lava's decay convention",b:"<span class='k'>α = 1 − current_decay</span>Lava's value is the fraction that leaks AWAY, the paper's α is the fraction retained. A small current_decay means a long memory."},
+        {f:"Soft reset versus hard reset",b:"Soft subtracts the threshold, carrying any overshoot forward. Hard sets the voltage to zero, discarding it. The paper writes a soft reset; Lava's CUBA implements a hard one."}
+      ]
+    }]
+  }]
+};
+
+/* ============================================================
+   WIDGETS
+   ============================================================ */
+const px=(t,T,a,b)=>a+t/T*(b-a);
+function rng(id,lab,min,max,step,val){
+  return `<div class="ctl"><label for="${id}">${lab}</label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"><output id="${id}v"></output></div>`;
+}
+const WIDGETS={
+ lif:{
+  html:`<p class="w-t">One neuron, constant input. Watch where it settles.</p>
+   <svg viewBox="0 0 660 260" width="100%" role="img"><title>Membrane potential over time</title>
+    <line x1="56" y1="220" x2="632" y2="220" stroke="var(--rule-2)" stroke-width="1"/>
+    <line x1="56" y1="30" x2="56" y2="220" stroke="var(--rule-2)" stroke-width="1"/>
+    <line id="lif-thr" x1="56" y1="62" x2="632" y2="62" stroke="var(--spike)" stroke-width="1" class="dash"/>
+    <line id="lif-ss" x1="56" y1="150" x2="632" y2="150" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="2 4"/>
+    <polyline id="lif-tr" fill="none" stroke="var(--volt)" stroke-width="2" stroke-linejoin="round"/>
+    <g id="lif-sp"></g>
+    <text x="50" y="66" text-anchor="end" font-size="11" fill="var(--spike)" font-family="IBM Plex Mono">ϑ</text>
+    <text x="50" y="224" text-anchor="end" font-size="11" fill="var(--ink-3)" font-family="IBM Plex Mono">0</text>
+    <text id="lif-sl" x="50" y="154" text-anchor="end" font-size="11" fill="var(--ink-3)" font-family="IBM Plex Mono">R·I</text>
+    <text x="344" y="248" text-anchor="middle" font-size="11" fill="var(--ink-3)">time (ms)</text>
+   </svg>
+   ${rng("lif-i","input R·I",0,2,.05,.6)}${rng("lif-t","τ mem",2,40,1,10)}
+   <div class="stats"><div class="stat"><span>settles at</span><b id="lif-a">—</b></div><div class="stat"><span>spikes in 200 ms</span><b id="lif-b">—</b></div><div class="stat"><span>firing rate</span><b id="lif-c">—</b></div></div>`,
+  init(){
+   const T=200,Y0=220,YT=30,UMIN=-.05,UMAX=1.45;
+   const py=u=>Y0-(u-UMIN)/(UMAX-UMIN)*(Y0-YT);
+   const $=id=>document.getElementById(id);
+   function run(){
+    const I=+$("lif-i").value,tau=+$("lif-t").value;
+    $("lif-iv").textContent=I.toFixed(2);$("lif-tv").textContent=tau+" ms";
+    let U=0,pts=[],sp=[];
+    for(let t=0;t<=T;t+=.2){
+     pts.push(px(t,T,56,632).toFixed(1)+","+py(Math.min(U,1)).toFixed(1));
+     U+=.2*(-U+I)/tau;
+     if(U>=1){sp.push(t);U=0;pts.push(px(t,T,56,632).toFixed(1)+","+py(1).toFixed(1),px(t,T,56,632).toFixed(1)+","+py(0).toFixed(1));}
+    }
+    $("lif-tr").setAttribute("points",pts.join(" "));
+    $("lif-sp").innerHTML=sp.map(t=>`<line x1="${px(t,T,56,632).toFixed(1)}" y1="34" x2="${px(t,T,56,632).toFixed(1)}" y2="50" stroke="var(--spike)" stroke-width="2"/>`).join("");
+    const y=py(Math.min(I,1.42));
+    $("lif-ss").setAttribute("y1",y);$("lif-ss").setAttribute("y2",y);$("lif-sl").setAttribute("y",(y+4).toFixed(1));
+    $("lif-a").textContent=I.toFixed(2);$("lif-b").textContent=sp.length;$("lif-c").textContent=Math.round(sp.length/.2)+" Hz";
+   }
+   ["lif-i","lif-t"].forEach(i=>$(i).addEventListener("input",run));run();
+  }},
+
+ cuba:{
+  html:`<p class="w-t">Spikes in, current, then voltage. Each stage smooths the one before.</p>
+   <svg viewBox="0 0 660 400" width="100%" role="img"><title>Two leaky stages in series</title>
+    <text x="56" y="20" font-size="11" fill="var(--ink-3)">input spikes</text>
+    <line x1="56" y1="64" x2="632" y2="64" stroke="var(--rule-2)" stroke-width="1"/><g id="cu-sp"></g>
+    <text x="56" y="100" font-size="11" fill="var(--ink-3)">synaptic current</text>
+    <line x1="56" y1="198" x2="632" y2="198" stroke="var(--rule-2)" stroke-width="1"/>
+    <polyline id="cu-i" fill="none" stroke="var(--curr)" stroke-width="2" stroke-linejoin="round"/>
+    <text x="56" y="234" font-size="11" fill="var(--ink-3)">membrane voltage</text>
+    <line x1="56" y1="348" x2="632" y2="348" stroke="var(--rule-2)" stroke-width="1"/>
+    <line x1="56" y1="262" x2="632" y2="262" stroke="var(--spike)" stroke-width="1" class="dash"/>
+    <text x="50" y="266" text-anchor="end" font-size="11" fill="var(--spike)" font-family="IBM Plex Mono">ϑ</text>
+    <polyline id="cu-u" fill="none" stroke="var(--volt)" stroke-width="2" stroke-linejoin="round"/><g id="cu-o"></g>
+    <text x="344" y="380" text-anchor="middle" font-size="11" fill="var(--ink-3)">time (ms)</text>
+   </svg>
+   ${rng("cu-w","weight W",.05,1,.05,.35)}${rng("cu-s","τ syn",1,30,1,5)}${rng("cu-m","τ mem",2,40,1,12)}
+   <div class="stats"><div class="stat"><span>output spikes</span><b id="cu-n">—</b></div></div>`,
+  init(){
+   const T=200,S=[12,26,34,58,92,118,126,134,168,176],$=id=>document.getElementById(id);
+   function run(){
+    const W=+$("cu-w").value,ts=+$("cu-s").value,tm=+$("cu-m").value;
+    $("cu-wv").textContent=W.toFixed(2);$("cu-sv").textContent=ts+" ms";$("cu-mv").textContent=tm+" ms";
+    $("cu-sp").innerHTML=S.map(t=>`<line x1="${px(t,T,56,632).toFixed(1)}" y1="32" x2="${px(t,T,56,632).toFixed(1)}" y2="64" stroke="var(--ok)" stroke-width="2"/>`).join("");
+    let I=0,U=0,si=0,Is=[],Us=[],ts_=[],f=[];
+    for(let t=0;t<=T;t+=.2){
+     while(si<S.length&&S[si]<=t){I+=W;si++;}
+     Is.push(I);ts_.push(t);
+     if(U>=1){U=0;f.push(t);}
+     Us.push(U);U+=.2*(-U+I)/tm;if(U>1.02)U=1.02;I+=.2*(-I)/ts;
+    }
+    const mx=Math.max(...Is)||1;
+    $("cu-i").setAttribute("points",Is.map((v,i)=>px(ts_[i],T,56,632).toFixed(1)+","+(198-v/mx*90).toFixed(1)).join(" "));
+    $("cu-u").setAttribute("points",Us.map((v,i)=>px(ts_[i],T,56,632).toFixed(1)+","+(348-Math.min(v,1)*86).toFixed(1)).join(" "));
+    $("cu-o").innerHTML=f.map(t=>`<line x1="${px(t,T,56,632).toFixed(1)}" y1="244" x2="${px(t,T,56,632).toFixed(1)}" y2="258" stroke="var(--spike)" stroke-width="2"/>`).join("");
+    $("cu-n").textContent=f.length;
+   }
+   ["cu-w","cu-s","cu-m"].forEach(i=>$(i).addEventListener("input",run));run();
+  }},
+
+ delta:{
+  html:`<p class="w-t">Shrink the pulse while holding its area fixed. The jump never changes.</p>
+   <svg viewBox="0 0 660 300" width="100%" role="img"><title>A delta as the limit of narrow pulses</title>
+    <text x="56" y="20" font-size="11" fill="var(--ink-3)">input pulse — area always equals W</text>
+    <line x1="56" y1="146" x2="632" y2="146" stroke="var(--rule-2)" stroke-width="1"/>
+    <rect id="d-p" x="240" y="100" width="40" height="46" fill="var(--ok)" rx="1"/>
+    <text id="d-h" x="290" y="118" font-size="11" fill="var(--ink-3)" font-family="IBM Plex Mono"></text>
+    <text x="56" y="180" font-size="11" fill="var(--ink-3)">resulting current</text>
+    <line x1="56" y1="268" x2="632" y2="268" stroke="var(--rule-2)" stroke-width="1"/>
+    <line x1="56" y1="210" x2="632" y2="210" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="3 4"/>
+    <text x="50" y="214" text-anchor="end" font-size="11" fill="var(--ink-3)" font-family="IBM Plex Mono">W</text>
+    <polyline id="d-t" fill="none" stroke="var(--curr)" stroke-width="2" stroke-linejoin="round"/>
+   </svg>
+   ${rng("d-e","pulse width ε",.3,24,.3,12)}
+   <div class="stats"><div class="stat"><span>pulse height</span><b id="d-a">—</b></div><div class="stat"><span>area</span><b id="d-b">—</b></div><div class="stat"><span>current jump</span><b id="d-c">—</b></div></div>`,
+  init(){
+   const T=200,W=.5,T0=70,$=id=>document.getElementById(id);
+   function run(){
+    const e=+$("d-e").value,h=W/e;
+    $("d-ev").textContent=e.toFixed(1);
+    const pw=Math.max(1.5,e/T*576),ph=Math.min(104,h*38),p=$("d-p");
+    p.setAttribute("x",px(T0,T,56,632).toFixed(1));p.setAttribute("width",pw.toFixed(1));
+    p.setAttribute("y",(146-ph).toFixed(1));p.setAttribute("height",ph.toFixed(1));
+    const hl=$("d-h");hl.setAttribute("x",(px(T0,T,56,632)+pw+8).toFixed(1));
+    hl.setAttribute("y",Math.max(20,146-ph+12).toFixed(1));hl.textContent=h.toFixed(2);
+    let I=0,pts=[],mxv=0;
+    for(let t=0;t<=T;t+=.1){
+     pts.push(px(t,T,56,632).toFixed(1)+","+(268-I*116).toFixed(1));
+     I+=.1*(-I/60+((t>=T0&&t<T0+e)?h:0));if(I>mxv)mxv=I;
+    }
+    $("d-t").setAttribute("points",pts.join(" "));
+    $("d-a").textContent=h.toFixed(2);$("d-b").textContent=(h*e).toFixed(2);$("d-c").textContent=mxv.toFixed(2);
+   }
+   $("d-e").addEventListener("input",run);run();
+  }},
+
+ reset:{
+  html:`<p class="w-t">Same input, two reset rules. Push the input up and they diverge.</p>
+   <svg viewBox="0 0 660 250" width="100%" role="img"><title>Soft versus hard reset</title>
+    <line x1="56" y1="206" x2="632" y2="206" stroke="var(--rule-2)" stroke-width="1"/>
+    <line x1="56" y1="60" x2="632" y2="60" stroke="var(--spike)" stroke-width="1" class="dash"/>
+    <text x="50" y="64" text-anchor="end" font-size="11" fill="var(--spike)" font-family="IBM Plex Mono">ϑ</text>
+    <text x="50" y="210" text-anchor="end" font-size="11" fill="var(--ink-3)" font-family="IBM Plex Mono">0</text>
+    <polyline id="r-s" fill="none" stroke="var(--volt)" stroke-width="2"/>
+    <polyline id="r-h" fill="none" stroke="var(--curr)" stroke-width="2" stroke-dasharray="5 3"/>
+    <text x="344" y="238" text-anchor="middle" font-size="11" fill="var(--ink-3)">time step</text>
+   </svg>
+   <div class="trace-lab"><span><i style="background:var(--volt)"></i>soft — subtract the threshold</span><span><i style="background:var(--curr)"></i>hard — set to zero</span></div>
+   ${rng("r-i","input I",.05,1.5,.05,.45)}${rng("r-b","β",.1,.95,.05,.8)}
+   <div class="stats"><div class="stat"><span>spikes, soft</span><b id="r-a">—</b></div><div class="stat"><span>spikes, hard</span><b id="r-c">—</b></div></div>`,
+  init(){
+   const N=60,$=id=>document.getElementById(id);
+   function run(){
+    const I=+$("r-i").value,b=+$("r-b").value;
+    $("r-iv").textContent=I.toFixed(2);$("r-bv").textContent=b.toFixed(2);
+    let Us=0,Uh=0,ps=[],ph=[],cs=0,ch=0;
+    for(let n=0;n<=N;n++){
+     ps.push(px(n,N,56,632).toFixed(1)+","+(206-Math.min(Us,1.35)*146).toFixed(1));
+     ph.push(px(n,N,56,632).toFixed(1)+","+(206-Math.min(Uh,1.35)*146).toFixed(1));
+     const ss=Us>=1?1:0;if(ss)cs++;Us=b*Us+I-ss;
+     const sh=Uh>=1?1:0;if(sh){ch++;Uh=0;}Uh=b*Uh+I;
+    }
+    $("r-s").setAttribute("points",ps.join(" "));$("r-h").setAttribute("points",ph.join(" "));
+    $("r-a").textContent=cs;$("r-c").textContent=ch;
+   }
+   ["r-i","r-b"].forEach(i=>$(i).addEventListener("input",run));run();
+  }}
+};
+
+/* ============================================================
+   STORAGE
+   ============================================================ */
+const DB={
+ get(k,d){try{const v=localStorage.getItem("nip:"+k);return v?JSON.parse(v):d;}catch(e){return d;}},
+ set(k,v){try{localStorage.setItem("nip:"+k,JSON.stringify(v));}catch(e){}}
+};
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const app=document.getElementById("app"),crumb=document.getElementById("crumb");
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+const find=(s,u)=>{const S=SITE.subjects.find(x=>x.id===s);return[S,S&&S.units.find(x=>x.id===u)];};
+
+function heroSVG(){
+  let U=0,d="",T=120;
+  for(let n=0;n<=T;n++){
+    const x=(n/T*100).toFixed(2),y=(46-Math.min(U,1)*38).toFixed(2);
+    d+=(n?"L":"M")+x+" "+y+" ";
+    if(U>=1)U=0; U=.86*U+.22;
+  }
+  return `<svg viewBox="0 0 100 52" width="100%" preserveAspectRatio="none" style="height:120px;display:block" role="img" aria-label="A membrane voltage trace charging and resetting against a threshold line">
+    <line x1="0" y1="8" x2="100" y2="8" stroke="var(--spike)" stroke-width=".4" class="dash"/>
+    <line x1="0" y1="46" x2="100" y2="46" stroke="var(--rule-2)" stroke-width=".3"/>
+    <path d="${d}" fill="none" stroke="var(--volt)" stroke-width=".9" vector-effect="non-scaling-stroke" class="draw"/>
+  </svg>`;
+}
+
+function home(){
+  crumb.innerHTML="";
+  app.innerHTML=`<section class="hero">
+    <h1>${esc(SITE.title)}</h1>
+    <p>${esc(SITE.tagline)}</p>
+    <div class="trace-box">${heroSVG()}
+      <div class="trace-lab pop" style="animation-delay:2.4s">
+        <span><i style="background:var(--volt)"></i>membrane voltage</span>
+        <span><i style="background:var(--spike)"></i>firing threshold</span>
+      </div>
+    </div>
+  </section>
+  <h2 class="sec">Subjects</h2>
+  <div class="subj">${SITE.subjects.map(s=>{
+    const done=s.units.filter(u=>DB.get(`q:${s.id}:${u.id}`,null)!==null).length;
+    return `<a class="card" href="#/${s.id}"><h3>${esc(s.title)}</h3><p>${esc(s.blurb)}</p>
+     <div class="meta"><span>${s.units.length} unit${s.units.length>1?"s":""}</span>${done?`<span class="pill">${done} attempted</span>`:""}</div></a>`;
+  }).join("")}</div>`;
+}
+
+function subject(sid){
+  const[S]=find(sid);if(!S)return home();
+  crumb.innerHTML=`<span>/</span><b>${esc(S.title)}</b>`;
+  app.innerHTML=`<section class="hero" style="padding:44px 0 30px">
+    <h1 style="font-size:clamp(28px,5vw,40px)">${esc(S.title)}</h1><p>${esc(S.blurb)}</p></section>
+    <h2 class="sec">Units</h2><div class="subj">${S.units.map(u=>{
+      const sc=DB.get(`q:${sid}:${u.id}`,null);
+      return `<a class="unit" href="#/${sid}/${u.id}"><span class="unit-n">${esc(u.n)}</span>
+       <span style="flex:1;min-width:0"><h3>${esc(u.title)}</h3><p>${esc(u.blurb)}</p></span>
+       ${sc!==null?`<span class="pill">${sc.c}/${sc.t}</span>`:""}</a>`;
+    }).join("")}</div>`;
+}
+
+function unit(sid,uid,tab){
+  const[S,U]=find(sid,uid);if(!U)return subject(sid);
+  tab=tab||DB.get("tab","notes");DB.set("tab",tab);
+  crumb.innerHTML=`<span>/</span><a href="#/${sid}" style="text-decoration:none;color:var(--ink-3)">${esc(S.title)}</a><span>/</span><b>${esc(U.n)}</b>`;
+  app.innerHTML=`<section style="padding:36px 0 0">
+    <h1 style="font-size:clamp(26px,4.6vw,36px);letter-spacing:-.03em;margin:0 0 8px;line-height:1.12">${esc(U.title)}</h1>
+    <p style="font-family:'Source Serif 4',Georgia,serif;color:var(--ink-2);margin:0;max-width:56ch">${esc(U.blurb)}</p></section>
+    <div class="tabs" role="tablist">${[["notes","Notes"],["quiz","Quiz"],["cards","Flashcards"]].map(([k,l])=>
+      `<button class="tab" role="tab" aria-selected="${tab===k}" data-t="${k}">${l}</button>`).join("")}</div>
+    <div id="pane"></div>`;
+  app.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{location.hash=`#/${sid}/${uid}/${b.dataset.t}`;});
+  ({notes:()=>notes(U),quiz:()=>quiz(S,U),cards:()=>cards(U)}[tab]||(()=>notes(U)))();
+}
+
+function notes(U){
+  const p=document.getElementById("pane"),pend=[];
+  p.className="notes";
+  p.innerHTML=U.notes.map(b=>{
+    if(b.t==="h")return `<h3>${esc(b.v)}</h3>`;
+    if(b.t==="p")return `<p>${b.v}</p>`;
+    if(b.t==="eq")return `<div class="eq">${b.v}</div>`;
+    if(b.t==="note")return `<div class="note-box ${b.class||""}">${b.v}</div>`;
+    if(b.t==="tbl")return `<table class="tbl"><thead><tr>${b.v[0].map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${b.v.slice(1).map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+    if(b.t==="widget"&&WIDGETS[b.v]){pend.push(b.v);return `<div class="w">${WIDGETS[b.v].html}</div>`;}
+    return "";
+  }).join("");
+  pend.forEach(k=>{try{WIDGETS[k].init();}catch(e){console.error(k,e);}});
+}
+
+function quiz(S,U){
+  const p=document.getElementById("pane");p.className="q";
+  let i=0,correct=0,answered=false;
+  function draw(){
+    if(i>=U.quiz.length){
+      DB.set(`q:${S.id}:${U.id}`,{c:correct,t:U.quiz.length});
+      p.innerHTML=`<div class="score"><b>${correct}/${U.quiz.length}</b>
+        <p>${correct===U.quiz.length?"Every one. This material is solid.":correct>=U.quiz.length*.7?"Close. Look again at the ones you missed.":"Worth another pass through the notes before retrying."}</p>
+        <button class="btn" id="again">Start over</button></div>`;
+      document.getElementById("again").onclick=()=>{i=0;correct=0;draw();};return;
+    }
+    const q=U.quiz[i];answered=false;
+    p.innerHTML=`<div class="q-top"><span>Question ${i+1} of ${U.quiz.length}</span><span>${correct} right</span></div>
+      <div class="q-bar"><i style="width:${i/U.quiz.length*100}%"></i></div>
+      <p class="q-p">${esc(q.q)}</p>
+      <div id="opts">${q.o.map((o,k)=>`<button class="opt" data-k="${k}">${esc(o)}</button>`).join("")}</div>
+      ${q.h?`<button class="hint" id="hint">Need a hint?</button>`:""}
+      <div id="after"></div>`;
+    const hb=document.getElementById("hint");
+    if(hb)hb.onclick=()=>{hb.outerHTML=`<p style="color:var(--ink-3);font-size:14px;font-family:'Source Serif 4',serif">${esc(q.h)}</p>`;};
+    p.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+      if(answered)return;answered=true;
+      const k=+b.dataset.k,ok=k===q.a;if(ok)correct++;
+      p.querySelectorAll(".opt").forEach((x,n)=>{x.disabled=true;if(n===q.a)x.classList.add("right");else if(n===k)x.classList.add("wrong");});
+      document.getElementById("after").innerHTML=`<div class="expl"><b>${ok?"That's right.":"Not quite."}</b> ${esc(q.e)}</div>
+        <button class="btn" id="next">${i===U.quiz.length-1?"See score":"Next question"}</button>`;
+      document.getElementById("next").onclick=()=>{i++;draw();};
+    });
+  }
+  draw();
+}
+
+function cards(U){
+  const p=document.getElementById("pane");p.className="fc-wrap";
+  let i=0,flip=false;
+  function draw(){
+    const c=U.cards[i];
+    p.innerHTML=`<div class="fc" id="fc" tabindex="0" role="button" aria-label="Flip card">
+        <span class="fc-side">${flip?"answer":"prompt"}</span>
+        <div class="${flip?"fc-a":"fc-q"}">${flip?c.b:esc(c.f)}</div>
+      </div>
+      <div class="fc-nav"><button id="pv" ${i===0?"disabled":""}>Back</button>
+        <span>${i+1} / ${U.cards.length} — tap to flip</span>
+        <button id="nx" ${i===U.cards.length-1?"disabled":""}>Next</button></div>`;
+    const f=document.getElementById("fc");
+    f.onclick=()=>{flip=!flip;draw();};
+    f.onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();flip=!flip;draw();}};
+    document.getElementById("pv").onclick=()=>{if(i>0){i--;flip=false;draw();}};
+    document.getElementById("nx").onclick=()=>{if(i<U.cards.length-1){i++;flip=false;draw();}};
+  }
+  draw();
+  document.addEventListener("keydown",function h(e){
+    if(!document.getElementById("fc"))return document.removeEventListener("keydown",h);
+    if(e.key==="ArrowRight")document.getElementById("nx")?.click();
+    if(e.key==="ArrowLeft")document.getElementById("pv")?.click();
+  });
+}
+
+/* ---------- router ---------- */
+function route(){
+  const p=location.hash.replace(/^#\/?/,"").split("/").filter(Boolean);
+  window.scrollTo(0,0);
+  if(!p.length)home();else if(p.length===1)subject(p[0]);else unit(p[0],p[1],p[2]);
+}
+addEventListener("hashchange",route);
+
+/* ---------- theme ---------- */
+const tb=document.getElementById("theme");
+const saved=DB.get("theme",null);if(saved)document.documentElement.dataset.theme=saved;
+tb.onclick=()=>{
+  const cur=document.documentElement.dataset.theme
+    ||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
+  const nx=cur==="dark"?"light":"dark";
+  document.documentElement.dataset.theme=nx;DB.set("theme",nx);
+};
+
+route();
+</script>
+
+<div style="max-width:1080px;margin:0 auto;padding:0 20px"><footer>
+  Open study notes. Progress is saved in your own browser and never leaves it.
+</footer></div>
+</body>
+</html>
