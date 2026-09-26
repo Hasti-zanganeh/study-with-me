@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Notes in Public</title>
+<title>Study with me</title>
+<meta name="description" content="Open study notes with interactive diagrams, quizzes and flashcards. Currently covering spiking neural networks.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -189,7 +190,7 @@ footer{border-top:1px solid var(--rule);margin-top:60px;padding:24px 0;font-size
       <path d="M1 15 C4 15, 4 4, 7 4 L7 15 C10 15, 10 4, 13 4 L13 15 C16 15, 16 4, 19 4 L19 15" stroke="var(--volt)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
       <path d="M1 3 H21" stroke="var(--spike)" stroke-width="1.2" stroke-dasharray="3 3"/>
     </svg>
-    <span>Notes in Public</span>
+    <span>Study with me</span>
   </a>
   <div class="crumb" id="crumb"></div>
   <div class="sp"></div>
@@ -205,7 +206,7 @@ footer{border-top:1px solid var(--rule);margin-top:60px;padding:24px 0;font-size
    CONTENT — add new subjects and units here.
    ============================================================ */
 const SITE = {
-  title: "Notes in Public",
+  title: "Study with me",
   tagline: "Open study notes with live diagrams, quizzes and flashcards. Built while learning, shared as it goes.",
   subjects: [{
     id:"snn", title:"Spiking neural networks",
@@ -307,6 +308,103 @@ const SITE = {
         {f:"Where exactly does training break, and what fixes it?",b:"At the spike function. A step has zero derivative almost everywhere, so gradients cannot flow back through it. A surrogate gradient substitutes a smooth derivative in the backward pass only."},
         {f:"Lava's decay convention",b:"<span class='k'>α = 1 − current_decay</span>Lava's value is the fraction that leaks AWAY, the paper's α is the fraction retained. A small current_decay means a long memory."},
         {f:"Soft reset versus hard reset",b:"Soft subtracts the threshold, carrying any overshoot forward. Hard sets the voltage to zero, discarding it. The paper writes a soft reset; Lava's CUBA implements a hard one."}
+      ]
+    },{
+      id:"day3", n:"Day 3", title:"Surrogate gradients",
+      blurb:"The spike function has no usable derivative. Here is the substitution that lets these networks train anyway.",
+      notes:[
+        {t:"h",v:"The problem, stated plainly"},
+        {t:"p",v:"An SNN needs its spikes to be binary. That is the whole point — sparse, event-driven, 0 or 1. But a binary output comes from a step function, and a step function has no derivative worth using."},
+        {t:"p",v:"Two things go wrong at once. Away from the threshold the step is perfectly flat, so its slope is <strong>zero</strong>. At the threshold it jumps, so its slope is <strong>undefined</strong> — formally a Dirac delta, infinitely tall."},
+        {t:"eq",v:"S = Θ(U − ϑ)     →     Θ′ = 0  almost everywhere\n<em>and a product with one zero factor in it is zero</em>"},
+        {t:"p",v:"That second line is the fatal part. Backpropagation multiplies derivatives along a chain. A single zero anywhere in that product wipes out everything, so no weight anywhere in the network receives a gradient. The model cannot learn at all."},
+
+        {t:"h",v:"The trick: let the two passes disagree"},
+        {t:"p",v:"Here is the move. The forward pass and the backward pass do not have to use the same function. Nothing enforces consistency between them — autograd simply looks up whatever derivative you registered for an operation."},
+        {t:"p",v:"So the forward pass keeps its hard step, producing real binary spikes. The backward pass pretends the step was smooth and uses that pretend function's derivative instead. The network trains as if it were continuous while behaving as if it were discrete."},
+        {t:"widget",v:"surro"},
+        {t:"p",v:"The top curve never moves. That is the forward pass, unchanged no matter what happens below. The bumps underneath are candidates for the backward pass. Drag the width and watch them all collapse toward an infinitely narrow spike — that narrow limit is the true derivative, and it is exactly what you are trying to avoid."},
+        {t:"p",v:"What matters is what the shapes have in common, not how they differ. Each is centred at the threshold, largest there, and fades away on both sides. The message to the network is identical in every case: <strong>a neuron that nearly fired, or nearly did not, is the one whose weights are worth adjusting.</strong> A neuron sitting far from threshold gets almost nothing, because nudging its weights would not have changed its output anyway."},
+        {t:"note",v:"<p><b>Width matters more than shape.</b> This is one of the paper's main empirical claims, and it is a little surprising. Rectangular, sigmoid-derivative and arctan all work about as well. How wide the window is turns out to matter considerably more than which curve you picked.</p>"},
+
+        {t:"h",v:"The substitution, in the chain rule"},
+        {t:"p",v:"Write out backpropagation for a single weight and the fix becomes almost anticlimactic. The gradient travels from the loss, through the spike, through the voltage, through the current, and finally into the weight:"},
+        {t:"eq",v:"∂L/∂W  =  ∂L/∂S · ∂S/∂U · ∂U/∂I · ∂I/∂W\n<em>every factor is an ordinary derivative — except the second</em>"},
+        {t:"p",v:"Three of those four factors are derivatives of plain linear operations, and they behave themselves. The offender is ∂S/∂U, which is Θ′ and equals zero. So one factor gets swapped:"},
+        {t:"eq",v:"∂S/∂U  =  Θ′(U − ϑ)   →   σ′(U − ϑ)"},
+        {t:"p",v:"<strong>Nothing else in the chain changes.</strong> That is the sentence to be able to say without looking. BPTT itself is untouched. The unrolled graph is untouched. The loss is untouched. One factor gets a stand-in and everything else runs as normal."},
+
+        {t:"h",v:"The second approximation, which is easy to miss"},
+        {t:"p",v:"Most people remember the surrogate and forget this one. The reset term also depends on the spike, so it too carries a Θ′ and contributes to the gradient. In practice that path is usually <strong>dropped entirely</strong> from the backward pass."},
+        {t:"p",v:"The justification is that reset is a correction rather than the main signal path, and including it tends to destabilise training more than it helps. But it is an approximation, and it is worth naming as one rather than pretending the derivation is exact."},
+        {t:"note",class:"warn",v:"<p><b>Two approximations, not one.</b> Surrogate for Θ′, and the reset path dropped. If you are asked how the gradient gets through the spike, both belong in the answer.</p>"},
+
+        {t:"h",v:"Credit across time"},
+        {t:"p",v:"Because the network is unrolled in time, the gradient does not only travel down through layers. It also travels <strong>backwards through timesteps</strong>. A spike at step 3 changed the voltage at step 4, which changed whether a spike happened at step 5, which affected the loss."},
+        {t:"p",v:"SLAYER calls this <strong>error reassignment in time</strong>. An error measured at the end of a sequence gets distributed back to the earlier spikes that caused it, spread according to the spike response kernel rather than assigned to one instant."},
+        {t:"p",v:"This is also why the loss is summed over the whole sequence rather than read off a single step:"},
+        {t:"eq",v:"L = Σ_t  ℓ(s_t, y)\n<em>every timestep contributes, so every timestep receives gradient</em>"},
+
+        {t:"h",v:"What this means for a real implementation"},
+        {t:"p",v:"SLAYER does not use any of the three shapes from the paper's figure. It uses a <strong>decaying exponential</strong> — same family, a bump centred on threshold, but with a sharp peak instead of a rounded one."},
+        {t:"eq",v:"σ′(U) = (scale_grad / 2ρ) · exp(−|U − ϑ| / ρ)\nρ = tau_grad × ϑ"},
+        {t:"p",v:"<code>tau_grad</code> is the width slider from the diagram above. It decides how far from threshold a neuron can sit and still receive gradient, and the default is 1."},
+        {t:"tbl",v:[["|U − ϑ|","tau_grad = 0.001","tau_grad = 1"],["0.001","184","0.50"],["0.005","3.4","0.50"],["0.01","0.023","0.50"],["0.05","0.0000000000000000001","0.48"]]},
+        {t:"p",v:"At 0.001 only neurons within roughly ±0.005 of threshold learn anything at all, while the few sitting exactly at threshold receive gradients in the hundreds. Near-nothing for most and enormous for a handful is a recipe for training that stalls or blows up. Worth checking in your own config before assuming it is fine."},
+        {t:"note",v:"<p><b>The one-line takeaway.</b> The surrogate gradient decides which neurons receive credit. Too narrow and almost none of them do.</p>"}
+      ],
+      quiz:[
+        {q:"Why is Θ′ zero almost everywhere?",
+         o:["Because the threshold is set to 1","Because a step function is perfectly flat on both sides of the jump","Because spikes are sparse in time","Because the voltage decays between spikes"],a:1,
+         h:"Picture the shape of a step and ask what its slope is.",
+         e:"A step is horizontal everywhere except at the single point where it jumps. A horizontal line has slope zero, so the derivative is zero on both sides."},
+        {q:"Why is a zero derivative fatal rather than merely inconvenient?",
+         o:["It makes the forward pass slower","Backpropagation multiplies derivatives, so one zero factor zeroes the whole chain","It forces the voltage to go negative","It makes the loss undefined"],a:1,
+         h:"What operation does the chain rule perform on the factors?",
+         e:"The chain rule is a product. A single zero anywhere in that product makes the result zero, so no weight in the network receives any gradient and nothing learns."},
+        {q:"In the surrogate gradient method, what happens to the forward pass?",
+         o:["It uses a smooth sigmoid instead of a step","It is unchanged — still a hard binary spike","It is skipped during training","It uses the surrogate only on the first epoch"],a:1,
+         h:"What would you lose if the forward pass stopped being binary?",
+         e:"Only the backward pass is substituted. The forward pass keeps its hard step, because binary spikes are what give an SNN its sparsity and event-driven efficiency. Smooth it and you have a rate network with extra steps."},
+        {q:"What do rectangular, sigmoid-derivative and arctan surrogates have in common?",
+         o:["They are all exactly equal to Θ′","They are bumps centred at the threshold, largest there and decaying away","They all require a learnable width","They all output binary values"],a:1,
+         h:"Think about where each one is biggest.",
+         e:"All three say the same thing: neurons near threshold are the ones worth adjusting, because they are the ones whose output a small weight change could have flipped. The paper finds the exact shape matters much less than the width."},
+        {q:"Which single factor in the BPTT chain rule gets replaced?",
+         o:["∂L/∂S","∂S/∂U","∂U/∂I","∂I/∂W"],a:1,
+         h:"Which factor involves the spike function?",
+         e:"Only ∂S/∂U, the derivative of the spike with respect to the voltage. The other three are derivatives of linear operations and behave normally. BPTT, the unrolled graph and the loss are all untouched."},
+        {q:"Besides the surrogate, what second approximation is usually made?",
+         o:["The leak term is set to zero","The reset path is dropped from the backward pass","The threshold is made learnable","The loss is computed only at the last timestep"],a:1,
+         h:"What else in the equations depends on the spike?",
+         e:"The reset also depends on S, so it carries a Θ′ too. That path is normally dropped, on the grounds that it is a correction rather than the main signal and tends to destabilise training. It is an approximation, and worth naming as one."},
+        {q:"What does SLAYER mean by \"error reassignment in time\"?",
+         o:["Rescaling the loss by the number of timesteps","Distributing an error back to the earlier spikes that caused it","Shifting spikes forward to align with labels","Resetting the gradient at each timestep"],a:1,
+         h:"The network is unrolled in time — where else can gradient flow?",
+         e:"Gradient flows backwards through timesteps as well as down through layers. An error at the end of a sequence is assigned back to earlier spikes that contributed to it, spread by the spike response kernel rather than pinned to one instant."},
+        {q:"Your tau_grad was 0.001 and you changed it to 1. What did that change?",
+         o:["The firing threshold moved","The learning window widened by a factor of about a thousand","The membrane time constant grew","The network became feedforward"],a:1,
+         h:"tau_grad sets ρ, which is the width of the surrogate.",
+         e:"ρ = tau_grad × ϑ is the width of the exponential surrogate. At 0.001 only neurons within about ±0.005 of threshold received any gradient. At 1, essentially all of them do."}
+      ],
+      cards:[
+        {f:"Why is Θ′ zero almost everywhere?",b:"A step function is perfectly flat on both sides of its jump, and a flat line has slope zero."},
+        {f:"Why is Θ′ undefined at the threshold?",b:"The function jumps instantaneously, so there is no finite slope there. Formally the derivative is a Dirac delta — infinitely tall, zero width."},
+        {f:"Why does a zero derivative stop all learning?",b:"The chain rule multiplies derivatives together. One zero factor makes the entire product zero, so no weight anywhere in the network receives a gradient."},
+        {f:"What is the surrogate gradient trick, in one sentence?",b:"Keep the hard binary step in the forward pass, but substitute a smooth function's derivative in the backward pass. Nothing requires the two passes to agree."},
+        {f:"Why not just use a smooth function in the forward pass too?",b:"You would lose binary spikes, and with them the sparsity and event-driven efficiency that justify using an SNN at all. That is a rate network with extra steps."},
+        {f:"Name three surrogate shapes from the paper",b:"Rectangular, the derivative of a sigmoid, and the derivative of an arctan. SLAYER uses a fourth: a decaying exponential."},
+        {f:"What do all surrogate shapes have in common?",b:"Each is a bump centred at the threshold, largest there and decaying away on both sides. They all say: neurons near threshold are the ones worth adjusting."},
+        {f:"Shape or width — which matters more?",b:"Width. The paper's empirical finding is that the specific curve matters much less than how wide the learning window is."},
+        {f:"Write the BPTT chain for one weight",b:"<span class='k'>∂L/∂W = ∂L/∂S · ∂S/∂U · ∂U/∂I · ∂I/∂W</span>Three factors are ordinary derivatives of linear operations. Only ∂S/∂U is the problem."},
+        {f:"Which single factor gets substituted?",b:"<span class='k'>∂S/∂U : Θ′ → σ′</span>Nothing else changes. BPTT, the unrolled graph and the loss are all untouched."},
+        {f:"What are the TWO approximations?",b:"First, Θ′ is replaced by a surrogate σ′. Second, the reset path is dropped from the backward pass. Most people remember the first and forget the second."},
+        {f:"Why is the reset path dropped?",b:"It is a correction rather than the main signal path, and including it tends to destabilise training. It is an approximation, not an exact derivation."},
+        {f:"What is \"error reassignment in time\"?",b:"Distributing an error measured late in a sequence back to the earlier spikes that caused it, spread by the spike response kernel rather than pinned to one instant."},
+        {f:"How does the loss aggregate over time?",b:"<span class='k'>L = Σ_t ℓ(s_t, y)</span>Every timestep contributes to the loss, so every timestep receives gradient."},
+        {f:"SLAYER's surrogate function",b:"<span class='k'>σ′(U) = (scale_grad / 2ρ) · exp(−|U − ϑ| / ρ)</span>with ρ = tau_grad × ϑ. A sharp-peaked exponential rather than a rounded bump."},
+        {f:"What does tau_grad control, and what is its default?",b:"The width of the learning window around the threshold. Default is 1. At 0.001 only neurons within about ±0.005 of threshold receive any gradient at all."},
+        {f:"The one-line takeaway for Day 3",b:"The surrogate gradient decides which neurons receive credit. Too narrow and almost none of them do."}
       ]
     }]
   }]
@@ -463,6 +561,43 @@ const WIDGETS={
     $("r-a").textContent=cs;$("r-c").textContent=ch;
    }
    ["r-i","r-b"].forEach(i=>$(i).addEventListener("input",run));run();
+  }},
+ surro:{
+  html:`<p class="w-t">The step never changes. Only the backward pass gets a stand-in.</p>
+   <svg viewBox="0 0 660 330" width="100%" role="img"><title>The step and its surrogates</title>
+    <text x="56" y="18" font-size="11" fill="var(--ink-3)">forward pass — a hard step, always</text>
+    <line x1="56" y1="106" x2="632" y2="106" stroke="var(--rule)" stroke-width="1"/>
+    <line x1="344" y1="32" x2="344" y2="292" stroke="var(--spike)" stroke-width="1" class="dash"/>
+    <path d="M 56 106 L 344 106 L 344 42 L 632 42" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+    <text x="110" y="122" font-size="11" fill="var(--ink-3)">slope 0</text>
+    <text x="500" y="60" font-size="11" fill="var(--ink-3)">slope 0</text>
+    <text x="350" y="76" font-size="11" fill="var(--spike)">undefined</text>
+    <text x="56" y="164" font-size="11" fill="var(--ink-3)">backward pass — pick a bump instead</text>
+    <line x1="56" y1="292" x2="632" y2="292" stroke="var(--rule-2)" stroke-width="1"/>
+    <path id="sr-r" fill="none" stroke="var(--ok)" stroke-width="2"/>
+    <path id="sr-s" fill="none" stroke="var(--volt)" stroke-width="2"/>
+    <path id="sr-a" fill="none" stroke="var(--curr)" stroke-width="2"/>
+    <path id="sr-e" fill="none" stroke="var(--spike)" stroke-width="2" stroke-dasharray="5 3"/>
+    <text x="344" y="312" text-anchor="middle" font-size="11" fill="var(--spike)" font-family="IBM Plex Mono">U = &#977;</text>
+   </svg>
+   <div class="trace-lab"><span><i style="background:var(--ok)"></i>rectangular</span><span><i style="background:var(--volt)"></i>sigmoid derivative</span><span><i style="background:var(--curr)"></i>arctan derivative</span><span><i style="background:var(--spike)"></i>exponential (SLAYER)</span></div>
+   ${rng("sr-w","width",.06,1.2,.02,.5)}`,
+  init(){
+   const ZY=292,H=112,SPAN=2.4,$=id=>document.getElementById(id);
+   const pxv=v=>344+v/SPAN*288;
+   function build(f){let d="",first=true;
+    for(let i=0;i<=400;i++){const v=-SPAN/2+i/400*SPAN,x=pxv(v);
+     if(x<56||x>632)continue;
+     d+=(first?"M ":"L ")+x.toFixed(1)+" "+(ZY-Math.min(f(v),1)*H).toFixed(1)+" ";first=false;}
+    return d;}
+   function run(){
+    const w=+$("sr-w").value;$("sr-wv").textContent=w.toFixed(2);
+    $("sr-r").setAttribute("d",build(v=>Math.abs(v)<w/2?1:0));
+    $("sr-s").setAttribute("d",build(v=>{const s=1/(1+Math.exp(-v/(w/6)));return 4*s*(1-s);}));
+    $("sr-a").setAttribute("d",build(v=>{const k=v/(w/3);return 1/(1+k*k);}));
+    $("sr-e").setAttribute("d",build(v=>Math.exp(-Math.abs(v)/(w/4))));
+   }
+   $("sr-w").addEventListener("input",run);run();
   }}
 };
 
@@ -637,7 +772,7 @@ route();
 </script>
 
 <div style="max-width:1080px;margin:0 auto;padding:0 20px"><footer>
-  Open study notes. Progress is saved in your own browser and never leaves it.
+  Built by Hasti Zanganeh &middot; <a href="https://github.com/Hasti-zanganeh/study-with-me" style="color:var(--ink-2)">source on GitHub</a><br>Progress is saved in your own browser and never leaves it.
 </footer></div>
 </body>
 </html>
