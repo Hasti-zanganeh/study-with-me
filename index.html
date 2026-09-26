@@ -351,7 +351,30 @@ const SITE = {
         {t:"p",v:"<code>tau_grad</code> is the width slider from the diagram above. It decides how far from threshold a neuron can sit and still receive gradient, and the default is 1."},
         {t:"tbl",v:[["|U − ϑ|","tau_grad = 0.001","tau_grad = 1"],["0.001","184","0.50"],["0.005","3.4","0.50"],["0.01","0.023","0.50"],["0.05","0.0000000000000000001","0.48"]]},
         {t:"p",v:"At 0.001 only neurons within roughly ±0.005 of threshold learn anything at all, while the few sitting exactly at threshold receive gradients in the hundreds. Near-nothing for most and enormous for a handful is a recipe for training that stalls or blows up. Worth checking in your own config before assuming it is fine."},
-        {t:"note",v:"<p><b>The one-line takeaway.</b> The surrogate gradient decides which neurons receive credit. Too narrow and almost none of them do.</p>"}
+        {t:"note",v:"<p><b>The one-line takeaway.</b> The surrogate gradient decides which neurons receive credit. Too narrow and almost none of them do.</p>"},
+
+        {t:"h",v:"Eqs. (10)–(12): the chain rule, written out step by step"},
+        {t:"p",v:"Neftci's page 18 does the same thing forward in time, for one weight W_ij. Differentiate each LIF line and read them bottom-up: (12) feeds (11), (11) feeds (10)."},
+        {t:"eq",v:"(12)  ∂I[n+1]/∂W = α·∂I[n]/∂W + S_j[n]\n<em>current sensitivity: decayed old value plus the input spike</em>"},
+        {t:"eq",v:"(11)  ∂U[n+1]/∂W = β·∂U[n]/∂W + ∂I[n]/∂W − ∂S[n]/∂W\n<em>voltage sensitivity: decayed old value plus current sensitivity minus the reset</em>"},
+        {t:"eq",v:"(10)  ∂S[n+1]/∂W = Θ′(U[n+1] − ϑ) · ∂U[n+1]/∂W\n<em>through the spike: this is where Θ′ appears</em>"},
+        {t:"p",v:"Apply the same two approximations: Θ′ becomes σ′, and the reset term −∂S/∂W is dropped. What is left is striking: ∂U/∂W is just the input spike train filtered twice, first by α and then by β. A PSP-shaped trace that depends only on presynaptic activity."},
+        {t:"eq",v:"∂U/∂W ≈ ε * S_j\n<em>W drops out because the current is linear in W</em>"},
+        {t:"tbl",v:[["n","S_j[n]","∂I/∂W","∂U/∂W"],["0","1","0","0"],["1","0","1","0"],["2","0","0.5","1"],["3","0","0.25","1.3"]]},
+        {t:"p",v:"That table uses α = 0.5, β = 0.8 and one input spike at n = 0. Notice the one-step delay at each stage: the spike reaches the current at n = 1 and the voltage at n = 2."},
+        {t:"note",v:"<p><b>Why no ∂S_j/∂W term in (12)?</b> S_j is input data, so it cannot depend on W. Not because it is binary. In a deeper or recurrent net that term would appear and things become non-local.</p>"},
+        {t:"note",class:"warn",v:"<p><b>σ′ gates the trace.</b> Eq. (10) is a product. A large trace times a tiny σ′ (voltage far from threshold) is still almost zero. No credit to neurons that were nowhere near firing.</p>"},
+
+        {t:"h",v:"SLAYER's backward rule, in one line"},
+        {t:"eq",v:"δ⁽ˡ⁾(t) = ρ(t) · ( ε ⊙ (Wᵀ δ⁽ˡ⁺¹⁾) )(t)\n<em>Wᵀ: back across layers.  ε ⊙: back in time.  ρ: only near threshold.</em>"},
+        {t:"p",v:"Spikes just before an error get the most blame, older ones less, and later ones none, because the future cannot cause the past. It is BPTT in spirit, so memory grows with T."},
+
+        {t:"h",v:"How a count loss still has a gradient"},
+        {t:"p",v:"For classification the loss compares spike counts: the true class should fire a lot, the others little. A count is an integer, but the count itself is never differentiated. The error (count − target) is spread evenly over all T steps. At each step it passes through the smooth surrogate, which keeps the near-threshold moments, near-misses included. Then the kernel sends it back to the input spikes that caused them."},
+        {t:"eq",v:"too many spikes  →  weights go down\ntoo few spikes   →  weights go up"},
+
+        {t:"h",v:"My model, mapped"},
+        {t:"tbl",v:[["code","meaning"],["slayer.block.cuba","CUBA-LIF neurons"],["current_decay 0.3","α ≈ 0.7"],["voltage_decay 0.25","β ≈ 0.75"],["threshold 1","ϑ = 1"],["tau_grad 1","width of SLAYER's exponential surrogate"],["requires_grad True","decays are learned, and federated-averaged"],["delay False","SLAYER's learnable delays are off"]]}
       ],
       quiz:[
         {q:"Why is Θ′ zero almost everywhere?",
@@ -385,7 +408,27 @@ const SITE = {
         {q:"Your tau_grad was 0.001 and you changed it to 1. What did that change?",
          o:["The firing threshold moved","The learning window widened by a factor of about a thousand","The membrane time constant grew","The network became feedforward"],a:1,
          h:"tau_grad sets ρ, which is the width of the surrogate.",
-         e:"ρ = tau_grad × ϑ is the width of the exponential surrogate. At 0.001 only neurons within about ±0.005 of threshold received any gradient. At 1, essentially all of them do."}
+         e:"ρ = tau_grad × ϑ is the width of the exponential surrogate. At 0.001 only neurons within about ±0.005 of threshold received any gradient. At 1, essentially all of them do."},
+        {q:"Why is there no ∂S_j/∂W term in Eq. (12)?",
+         o:["Because S_j is binary","Because α cancels it","Because it is dropped as an approximation","Because S_j is input data and does not depend on W"],a:3,
+         h:"Where do the input spikes come from in a two-layer net?",
+         e:"S_j is the input layer, fixed by the data. Changing W_ij cannot change it. Being 0/1 is not the reason."},
+        {q:"With the reset dropped, ∂U/∂W depends only on…",
+         o:["Input j's spikes, filtered twice (ε * S_j)","The weight W itself","The target spike train","Neuron i's own output spikes"],a:0,
+         h:"Is the current linear in W?",
+         e:"The current is W times a presynaptic trace, so its derivative drops W. Filtering by α then β gives a PSP-shaped trace of input j's spikes."},
+        {q:"A neuron's voltage trace is large but its voltage was far below threshold. What is ∂S/∂W with the surrogate?",
+         o:["Large, because the trace is large","Exactly equal to the trace","Close to 0, because σ′ is tiny there","Undefined"],a:2,
+         h:"Eq. (10) is a product.",
+         e:"σ′ gates the trace. Far from threshold σ′ ≈ 0, so the product is ≈ 0 no matter how big the trace is."},
+        {q:"In SLAYER, an error happens at t = 26. Input spikes are at 20, 22 and 33. Which gets zero blame?",
+         o:["t = 20","t = 33","t = 22","None, all share equally"],a:1,
+         h:"Can the future cause the past?",
+         e:"The kernel is zero for negative time. A spike after the error could not have caused it, so it gets no blame."},
+        {q:"A count loss says 9 spikes, target 6. What does the gradient do, and why does it exist?",
+         o:["Nothing, counts are integers so there is no gradient","Weights go up, because the error is positive","Weights go down; the error flows through the smooth surrogate at every step","Only the last time step is updated"],a:2,
+         h:"The count isn't differentiated directly.",
+         e:"The error is spread over all steps and passes through the surrogate, which is smooth. Too many spikes means the weights are pushed down."}
       ],
       cards:[
         {f:"Why is Θ′ zero almost everywhere?",b:"A step function is perfectly flat on both sides of its jump, and a flat line has slope zero."},
@@ -404,7 +447,93 @@ const SITE = {
         {f:"How does the loss aggregate over time?",b:"<span class='k'>L = Σ_t ℓ(s_t, y)</span>Every timestep contributes to the loss, so every timestep receives gradient."},
         {f:"SLAYER's surrogate function",b:"<span class='k'>σ′(U) = (scale_grad / 2ρ) · exp(−|U − ϑ| / ρ)</span>with ρ = tau_grad × ϑ. A sharp-peaked exponential rather than a rounded bump."},
         {f:"What does tau_grad control, and what is its default?",b:"The width of the learning window around the threshold. Default is 1. At 0.001 only neurons within about ±0.005 of threshold receive any gradient at all."},
-        {f:"The one-line takeaway for Day 3",b:"The surrogate gradient decides which neurons receive credit. Too narrow and almost none of them do."}
+        {f:"The one-line takeaway for Day 3",b:"The surrogate gradient decides which neurons receive credit. Too narrow and almost none of them do."},
+        {f:"Eqs. (10)–(12)",b:"<span class='k'>∂I[n+1] = α∂I[n] + S_j[n]<br>∂U[n+1] = β∂U[n] + ∂I[n] − ∂S[n]<br>∂S[n+1] = Θ′·∂U[n+1]</span>Replace Θ′ with σ′, and drop the reset term."},
+        {f:"With the reset dropped, what does ∂U/∂W depend on?",b:"<span class='k'>∂U/∂W ≈ ε * S_j</span>Only input j's spikes, filtered by α then β. W drops out because the current is linear in W."},
+        {f:"What does σ′ do in Eq. (10)?",b:"It gates the trace. Far from threshold σ′ ≈ 0, so the gradient is ≈ 0 even if the trace is large."},
+        {f:"How can a count loss train an SNN?",b:"The error (count − target) is spread over all T steps, passes through the smooth surrogate (near-threshold moments, near-misses too), then the kernel sends it back to the causing inputs."},
+        {f:"SuperSpike versus SLAYER",b:"SuperSpike: forward traces in time, random feedback across layers, local and online. SLAYER: errors backward in time, exact backprop across layers, memory grows with T."},
+        {f:"30-second answer: why does this work if it's non-differentiable?",b:"The forward pass stays truly spiking. In the backward pass we swap Θ′ for a smooth function peaked at threshold, giving credit to neurons that were close to firing. It's a biased but useful gradient, and many shapes work."}
+      ]
+    },{
+      id:"day4", n:"Day 4", title:"Event data and the SNN architecture",
+      blurb:"From camera events to a binary tensor, then layer by layer through Figure 1 with shapes, parameters and bytes.",
+      notes:[
+        {t:"h",v:"What an event camera records"},
+        {t:"p",v:"A normal camera takes whole pictures. A DVS camera does not. Each pixel works on its own and reports only when its brightness changes. Each report is one event."},
+        {t:"eq",v:"event = (x, y, t, p)\n<em>pixel position, time in microseconds, polarity ON (brighter) or OFF (darker)</em>"},
+        {t:"p",v:"Nothing moving means no events. The data is sparse and already spike-like, which is why it pairs so naturally with SNNs."},
+        {t:"h",v:"CIFAR10-DVS"},
+        {t:"p",v:"Li et al. 2017 showed CIFAR-10 images on a monitor, moved them, and recorded them with a DVS camera. The motion creates the brightness changes. <strong>10 classes, 10,000 samples, 128 × 128 pixels, 2 polarities.</strong>"},
+        {t:"h",v:"From events to a tensor: time bins"},
+        {t:"p",v:"Cut each recording into T equal slices of time. Each slice is a <strong>time bin</strong>. All events inside one bin are squashed into one frame, and one frame is one time step for the SNN."},
+        {t:"eq",v:"x[p, y, x, t] = 1  if ≥ 1 event at that pixel,\n                   polarity and bin\n              = 0  otherwise\n<em>bitwise-OR binning, T = 16  →  tensor (2, 128, 128, 16)</em>"},
+        {t:"widget",v:"bin"},
+        {t:"p",v:"<strong>OR versus counting.</strong> Counting stores how many events landed; OR only stores whether any did. OR gives true binary spikes and caps noisy hot pixels at 1. The cost is losing the count. With short bins, collisions are rare, so OR and counting become almost the same."},
+        {t:"p",v:"<strong>Why T = 16.</strong> Small T means long bins: frames fill up and timing is lost. Large T keeps timing but BPTT memory grows linearly with T. Sixteen is the balance. It was not ablated, which belongs on the limitations list."},
+        {t:"h",v:"The synapse: one number per window"},
+        {t:"p",v:"A 5 × 5 window slides over the input with stride 4. At each position and time step it multiplies the input spikes by its weights and adds them up. Because the input is 0/1, that is just the sum of the weights where a spike happened."},
+        {t:"eq",v:"z[t] = w · x[t] = Σ over 5 × 5 × 2 = 50 inputs\n<em>the same weights at every time step and every position</em>"},
+        {t:"p",v:"Each conv layer has several <strong>weight sets</strong> (filters). SpkConv(2, 8) has 8: each set looks at the same patch and responds to a different pattern, giving 8 numbers per position. They start random and specialise through training."},
+        {t:"h",v:"The neuron: z becomes spikes"},
+        {t:"eq",v:"current[t] = 0.7 · current[t−1] + z[t]\nvoltage[t] = 0.75 · voltage[t−1] + current[t]\nspike if voltage ≥ 1, then voltage → 0\n<em>Lava's CUBA, with my decays; note the hard reset</em>"},
+        {t:"h",v:"Figure 1, layer by layer"},
+        {t:"eq",v:"out = ⌊(in + 2p − k) / s⌋ + 1      k = 5, s = 4, p = 1\n128 → 32 → 8 → 2"},
+        {t:"tbl",v:[["layer","output","weights","with extras"],["Input","2 × 128 × 128","0","0"],["SpkConv1 (2 → 8)","8 × 32 × 32","8·2·5·5 = 400","410"],["SpkConv2 (8 → 32)","32 × 8 × 8","32·8·5·5 = 6,400","6,434"],["SpkConv3 (32 → 64)","64 × 2 × 2","64·32·5·5 = 51,200","51,266"],["Flatten","256","0","0"],["SpkDense1","2056","256·2056 = 526,336","528,394"],["SpkDense2","10","2056·10 = 20,560","20,572"],["Total","","","≈ 607,076"]]},
+        {t:"note",v:"<p><b>Extras</b> = one weight-norm scale per output channel plus two learnable decays per layer. Confirm the exact total with <code>SNN(10).params()</code>. SpkDense1 alone holds about 87% of the model, so it dominates communication.</p>"},
+        {t:"p",v:"<strong>Why stride 4:</strong> only three conv layers to go from 128 to 2, so a short gradient path through surrogates, fewer dead neurons, and a smaller model. <strong>The cost:</strong> windows barely overlap, so fine spatial detail is lost. Decoding is the class neuron with the most spikes over T."},
+        {t:"h",v:"Bytes, memory and compute"},
+        {t:"eq",v:"model size M = P × b     (b = 4, 2 or 1 bytes)\nupload per round = M × K\nup + down per round = M × K × 2\nwhole training = M × K × 2 × R"},
+        {t:"widget",v:"comm"},
+        {t:"eq",v:"activation memory ≈ neurons × T × 4 states × 4 B × B\n12,562 neurons → ≈ 3.2 MB per sample, ≈ 412 MB at B = 128\n<em>linear in T: this is why BPTT is memory-bound</em>"},
+        {t:"eq",v:"MACs per step = Σ C_out·H_out·W_out·C_in·k²  +  Σ N_in·N_out ≈ 1.57 M\nper sample ≈ 1.57 M × 16 ≈ 25 M\n<em>on neuromorphic hardware: synaptic ops ≈ MACs × spike rate</em>"},
+        {t:"eq",v:"samples per client N_k = N_train / K\nlocal steps per round = ⌈N_k / B⌉ × E"}
+      ],
+      quiz:[
+        {q:"What does one time bin become in the input tensor?",
+         o:["One event","One pixel","One frame, which is one time step","The whole recording"],a:2,
+         h:"The last dimension of (2, 128, 128, 16).",
+         e:"All events in that slice are squashed into one frame. Sixteen bins give sixteen time steps."},
+        {q:"A pixel gets 4 ON events inside the same bin. What value does OR binning give it?",
+         o:["1","4","0.25","0"],a:0,
+         h:"OR asks only whether anything happened.",
+         e:"Any count of one or more becomes 1. That is the information OR discards."},
+        {q:"When is the information lost by OR binning smallest?",
+         o:["When T is small","It is the same for any T","When the image does not move","When T is large, so bins are short"],a:3,
+         h:"How often do two events share a short bin?",
+         e:"Short bins rarely hold two events at the same pixel, so OR and counting become nearly identical."},
+        {q:"Why not just use T = 64?",
+         o:["BPTT memory and compute grow with T","OR binning stops working","The camera only records 16 frames","Accuracy always drops"],a:0,
+         h:"What must backprop through time store?",
+         e:"Every neuron's state at every step is kept for the backward pass, so memory grows linearly with T."},
+        {q:"What is the output shape of SpkConv2?",
+         o:["8 × 32 × 32","32 × 8 × 8","64 × 2 × 2","32 × 32 × 8"],a:1,
+         h:"Channels are the second number in SpkConv(in, out); size divides by 4.",
+         e:"SpkConv(8, 32) has 32 weight sets, and 32 pixels shrink to 8. So 32 × 8 × 8. 8 × 32 × 32 is SpkConv1."},
+        {q:"Which layer holds most of the parameters?",
+         o:["SpkConv3","SpkDense2","SpkConv1","SpkDense1"],a:3,
+         h:"256 × 2056.",
+         e:"SpkDense1 has 526,336 weights, about 87% of the model. It dominates communication cost."},
+        {q:"The model is ≈ 2.43 MB. With K = 4, what is the total UPLOAD to the server in one round?",
+         o:["≈ 2.4 MB","≈ 19.4 MB","≈ 9.7 MB","≈ 4.8 MB"],a:2,
+         h:"One model per client, one direction.",
+         e:"2.43 × 4 ≈ 9.7 MB. Up plus down would double it to ≈ 19.4 MB."},
+        {q:"Compute z. Weights row by row: [0.5, −0.2, 0.1 | 0, 0.3, 0.4 | −0.1, 0.2, 0.6]. Input: [0, 1, 0 | 1, 1, 0 | 0, 0, 1].",
+         o:["1.0","0.9","0.7","1.3"],a:2,
+         h:"Add only the weights where the input is 1.",
+         e:"−0.2 + 0 + 0.3 + 0.6 = 0.7."}
+      ],
+      cards:[
+        {f:"What is an event?",b:"<span class='k'>(x, y, t, p)</span>A single pixel reporting a brightness change at time t. Polarity ON = brighter, OFF = darker."},
+        {f:"CIFAR10-DVS in one line",b:"CIFAR-10 images moved on a monitor and recorded with a DVS camera. 10 classes, 10,000 samples, 128 × 128, 2 polarities."},
+        {f:"What is a time bin?",b:"One equal slice of the recording. All its events are squashed into one frame, which is one time step for the SNN."},
+        {f:"OR binning versus counting",b:"OR: 1 if any event, else 0. True spikes, robust to hot pixels, loses counts. Counting keeps the number but isn't a spike and needs normalising."},
+        {f:"Why T = 16?",b:"Enough temporal detail while keeping BPTT memory, which grows linearly with T, affordable. Not ablated: a stated limitation."},
+        {f:"Conv output size formula",b:"<span class='k'>⌊(in + 2p − k) / s⌋ + 1</span>With k = 5, s = 4, p = 1: 128 → 32 → 8 → 2."},
+        {f:"Figure 1 shapes",b:"<span class='k'>2×128×128 → 8×32×32 → 32×8×8 → 64×2×2 → 256 → 2056 → 10</span>Channels up, picture down."},
+        {f:"What is a weight set?",b:"One filter of size k × k × C_in. SpkConv(2, 8) has 8 of them, each responding to a different pattern. The count is a design choice."},
+        {f:"Total parameters and bytes",b:"<span class='k'>≈ 607,076 × 4 B ≈ 2.43 MB</span>Upload per round = M × K; up + down = × 2. SpkDense1 ≈ 87% of it."},
+        {f:"Why stride 4, and what does it cost?",b:"Only three conv layers, a short gradient path, fewer dead neurons, a small model. Cost: little window overlap, so fine spatial detail is lost."}
       ]
     }]
   }]
@@ -562,6 +691,7 @@ const WIDGETS={
    }
    ["r-i","r-b"].forEach(i=>$(i).addEventListener("input",run));run();
   }},
+
  surro:{
   html:`<p class="w-t">The step never changes. Only the backward pass gets a stand-in.</p>
    <svg viewBox="0 0 660 330" width="100%" role="img"><title>The step and its surrogates</title>
@@ -598,6 +728,48 @@ const WIDGETS={
     $("sr-e").setAttribute("d",build(v=>Math.exp(-Math.abs(v)/(w/4))));
    }
    $("sr-w").addEventListener("input",run);run();
+  }},
+
+ bin:{
+  html:`<p class="w-t">One pixel, seven events in one second. Cut the time into T bins and compare OR with counting.</p>
+   <svg viewBox="0 0 660 200" width="100%" role="img"><title>Binning one pixel's events</title>
+    <text x="56" y="20" font-size="11" fill="var(--ink-3)">events</text>
+    <line x1="56" y1="60" x2="632" y2="60" stroke="var(--rule-2)" stroke-width="1"/><g id="b-ev"></g><g id="b-ed"></g>
+    <text x="56" y="92" font-size="11" fill="var(--ink-3)">count per bin</text><g id="b-c"></g>
+    <text x="56" y="150" font-size="11" fill="var(--ink-3)">OR per bin</text><g id="b-o"></g>
+   </svg>
+   ${rng("b-t","time bins T",0,3,1,2)}
+   <div class="stats"><div class="stat"><span>events</span><b>7</b></div><div class="stat"><span>kept by OR</span><b id="b-k">—</b></div><div class="stat"><span>hidden by OR</span><b id="b-h">—</b></div></div>`,
+  init(){
+   const E=[30,45,50,210,700,720,905],Ts=[4,8,16,32],$=id=>document.getElementById(id);
+   $("b-ev").innerHTML=E.map(t=>`<line x1="${px(t,1000,56,632).toFixed(1)}" y1="34" x2="${px(t,1000,56,632).toFixed(1)}" y2="60" stroke="var(--ok)" stroke-width="2"/>`).join("");
+   function run(){
+    const T=Ts[+$("b-t").value];$("b-tv").textContent=T;
+    const c=new Array(T).fill(0);E.forEach(t=>c[Math.floor(t/1000*T)]++);
+    const w=576/T;let ed="",cc="",oo="";
+    for(let i=0;i<=T;i++)ed+=`<line x1="${(56+i*w).toFixed(1)}" y1="28" x2="${(56+i*w).toFixed(1)}" y2="64" stroke="var(--rule-2)" stroke-width="1" stroke-dasharray="2 3"/>`;
+    c.forEach((v,i)=>{const x=56+i*w;
+     cc+=`<rect x="${(x+1).toFixed(1)}" y="100" width="${(w-2).toFixed(1)}" height="32" rx="3" fill="${v?"var(--curr)":"var(--panel-2)"}" opacity="${v?Math.min(1,.35+.25*v):1}"/>`+(w>16?`<text x="${(x+w/2).toFixed(1)}" y="121" text-anchor="middle" font-size="11" fill="var(--ink)" font-family="IBM Plex Mono">${v}</text>`:"");
+     oo+=`<rect x="${(x+1).toFixed(1)}" y="158" width="${(w-2).toFixed(1)}" height="32" rx="3" fill="${v?"var(--volt)":"var(--panel-2)"}"/>`+(w>16?`<text x="${(x+w/2).toFixed(1)}" y="179" text-anchor="middle" font-size="11" fill="${v?"#fff":"var(--ink-3)"}" font-family="IBM Plex Mono">${v?1:0}</text>`:"");});
+    $("b-ed").innerHTML=ed;$("b-c").innerHTML=cc;$("b-o").innerHTML=oo;
+    const k=c.filter(v=>v>0).length;$("b-k").textContent=k;$("b-h").textContent=7-k;
+   }
+   $("b-t").addEventListener("input",run);run();
+  }},
+
+ comm:{
+  html:`<p class="w-t">Communication cost of one model, P ≈ 607,076 parameters.</p>
+   ${rng("c-k","clients K",1,16,1,8)}${rng("c-b","bytes / value",0,2,1,0)}${rng("c-r","rounds R",10,100,10,60)}
+   <div class="stats"><div class="stat"><span>model M = P × b</span><b id="c-1">—</b></div><div class="stat"><span>upload M × K</span><b id="c-2">—</b></div><div class="stat"><span>up + down × 2</span><b id="c-3">—</b></div><div class="stat"><span>all rounds × R</span><b id="c-4">—</b></div></div>`,
+  init(){
+   const P=607076,B=[[4,"fp32"],[2,"fp16"],[1,"int8"]],$=id=>document.getElementById(id);
+   const f=x=>x>=1e9?(x/1e9).toFixed(2)+" GB":(x/1e6).toFixed(2)+" MB";
+   function run(){
+    const K=+$("c-k").value,b=B[+$("c-b").value],R=+$("c-r").value,M=P*b[0];
+    $("c-kv").textContent=K;$("c-bv").textContent=b[1];$("c-rv").textContent=R;
+    $("c-1").textContent=f(M);$("c-2").textContent=f(M*K);$("c-3").textContent=f(M*K*2);$("c-4").textContent=f(M*K*2*R);
+   }
+   ["c-k","c-b","c-r"].forEach(i=>$(i).addEventListener("input",run));run();
   }}
 };
 
