@@ -631,6 +631,112 @@ const SITE = {
         {f:"My results versus McMahan",b:"E agrees: E 2 → 8 gave about 2.5–3× fewer rounds. B is opposite: larger B was faster for me, plausibly because fixed η = 0.001 makes gradient noise costly."},
         {f:"Is federated learning private?",b:"It keeps raw data local and sends minimal, ephemeral updates, but gives no formal guarantee; updates can leak. My paper makes no privacy claim."}
       ]
+    },{
+      id:"day6", n:"Day 6", title:"Client drift, non-IID and the Flower framework",
+      blurb:"When FedAvg struggles, the standard fixes (FedProx, SCAFFOLD), and one Flower round traced through my own code.",
+      notes:[
+        {t:"h",v:"When FedAvg struggles: client drift"},
+        {t:"p",v:"With non-IID data, every client's local optimum sits somewhere different. Many local steps pull each client toward <strong>its own</strong> optimum, so the averaged model lands near the average of the client optima instead of the true global optimum. That gap is <strong>client drift</strong>. More local steps and more skewed data both make it worse."},
+        {t:"widget",v:"drift"},
+        {t:"p",v:"Set non-IID strength to 0 and the client optima collapse onto the global one: no drift. That is my paper's IID setting. Push it to 1 with many local steps and FedAvg settles visibly off-target. FedProx shortens the client paths; SCAFFOLD steers them back to the true optimum. (A toy with bowl-shaped losses; real SNN losses are more complex, but the mechanism is the same.)"},
+        {t:"h",v:"Zhao et al. 2018: weight divergence"},
+        {t:"p",v:"<strong>\"Federated Learning with Non-IID Data\"</strong> [24]. Under highly skewed splits, FedAvg loses accuracy: <strong>up to 11% on MNIST, 51% on CIFAR-10 and 55% on keyword spotting</strong>. Harder tasks suffer more."},
+        {t:"eq",v:"weight divergence = ‖w_FedAvg − w_SGD‖ / ‖w_SGD‖\n<em>how far the federated model drifts from centralized SGD, same initialization</em>"},
+        {t:"p",v:"The root cause is the <strong>earth mover's distance</strong> between each client's class distribution and the population's. In their '1-class non-IID' setting each client holds only one class; in '2-class', two. Their fix is a small globally shared, class-balanced dataset: about <strong>5% shared data gave roughly +30% on CIFAR-10</strong>. The catch: sharing data partly conflicts with keeping data local."},
+        {t:"h",v:"Li et al. 2020: the four challenges"},
+        {t:"p",v:"<strong>\"Federated Learning: Challenges, Methods, and Future Directions\"</strong> [11] names four challenges: <strong>expensive communication, systems heterogeneity, statistical heterogeneity, and privacy</strong>."},
+        {t:"tbl",v:[["term","means","memory trick"],["statistical heterogeneity","clients' data is non-IID","statistical = data"],["systems heterogeneity","devices differ in storage, compute, network; few active at once","systems = hardware"]]},
+        {t:"p",v:"Section 2.3.2: classical parallel-SGD analyses assume every local solver is a copy of the same stochastic process, which the non-IID setting breaks. FedAvg has been shown to <strong>diverge</strong> in practice on heterogeneous data. Heuristic fixes that share device or proxy data may violate privacy assumptions. Open gap: few analyses allow realistic <strong>low participation</strong> or <strong>dropped devices</strong>."},
+        {t:"h",v:"FedProx: a proximal term"},
+        {t:"eq",v:"client k minimizes   F_k(w) + (μ/2) ‖w − w_t‖²\n<em>local loss plus a penalty for moving away from the global model</em>"},
+        {t:"p",v:"μ = 0 is exactly FedAvg; the paper calls FedProx a generalization and re-parametrization of FedAvg. Small μ allows drift; large μ keeps clients near w_t but slows local progress. It also accepts <strong>partial local work</strong> from slow devices instead of dropping them, and reports about <strong>22% higher absolute test accuracy</strong> on average in highly heterogeneous settings."},
+        {t:"h",v:"SCAFFOLD: control variates"},
+        {t:"eq",v:"local step:   y_i ← y_i − η_l ( g_i(y_i) − c_i + c )\ncontrol:      c_i⁺ ← c_i − c + (x − y_i) / (K η_l)\nserver:       x ← x + (η_g/|S|) Σ (y_i − x),   c ← c + (1/N) Σ (c_i⁺ − c_i)"},
+        {t:"p",v:"c_i estimates client i's gradient, c the average over clients. Subtracting c_i and adding c removes each client's bias, so local steps head toward the true optimum even on very different data. Clients are stateful, and with every c_i = 0 SCAFFOLD is FedAvg."},
+        {t:"note",class:"warn",v:"<p><b>Notation trap.</b> In SCAFFOLD, <b>N</b> is the number of clients and <b>K</b> is the number of local steps. In McMahan and in my paper, K is the number of clients.</p>"},
+        {t:"tbl",v:[["fix","idea"],["Zhao et al.","share a small balanced dataset"],["FedProx","proximal term keeps local models near w_t"],["SCAFFOLD","control variates correct each client's drift"]]},
+        {t:"h",v:"Why I did not need them, and why I cite them"},
+        {t:"p",v:"My split is IID with full participation, so every client's data looks like the global data and the client optima nearly coincide: little drift, so plain FedAvg works. They are the standard fixes for non-IID data, and a <strong>Dirichlet non-IID split</strong> is my first future experiment. Expected: slower convergence, more oscillation, lower final accuracy, larger E starting to hurt, and FedProx or SCAFFOLD recovering part of the gap."},
+        {t:"h",v:"Flower, in my own code"},
+        {t:"p",v:"My code uses Flower's newer <strong>Message API</strong>, not the older NumPyClient. The mapping:"},
+        {t:"tbl",v:[["older API","my code","file"],["NumPyClient.fit","@app.train() → train_fn_app","client_app.py"],["NumPyClient.evaluate","@app.evaluate() → evaluate_fn_app","client_app.py"],["get_parameters","ArrayRecord(model.state_dict())","both"],["start_server","@app.main() + strategy.start(grid, …)","server_app.py"],["start_simulation","flwr run . (Simulation Engine, Ray)","pyproject.toml"]]},
+        {t:"eq",v:"strategy = FedAvg(fraction_train=1.0, fraction_evaluate=1.0)\nstrategy.start(grid, initial_arrays=arrays,\n               train_config=ConfigRecord({\"learning-rate\": lr}),\n               num_rounds=60, evaluate_fn=Dummy(context))"},
+        {t:"h",v:"One Flower round, step by step"},
+        {t:"eq",v:"1  select        fraction_train = 1.0 → all K clients\n2  broadcast     Message with the global ArrayRecord + config\n3  train         train_fn_app: load weights, 1/K shard, E epochs,\n                 Adam lr 0.001, cross-entropy on mean spikes\n4  reply         new arrays + metrics {train_loss, num-examples}\n5  aggregate     FedAvg: weighted average by num-examples\n6  central eval  evaluate_fn → central_evaluate on the full test set\n7  fed. eval     evaluate_fn_app on each client's test shard\nrepeat for 60 rounds, then save final_model.pt"},
+        {t:"note",v:"<p><b>Global Eval Accuracy</b> is the aggregated global model, evaluated on the server after each round, on the <b>full held-out test set</b> (CentralEvaluate.csv). The clients' test shards together make up exactly that set, so the federated accuracy equals it: the second evaluation is redundant.</p>"},
+        {t:"h",v:"Facts confirmed from my code"},
+        {t:"tbl",v:[["item","value"],["loss","CrossEntropyLoss on time-averaged output spikes (not slayer.loss)"],["prediction","argmax of mean spikes: most spikes wins"],["optimizer","Adam, lr 0.001, re-created each round per client"],["data","61,237 train / 15,313 test .npz files (80/20), pre-split folders"],["per client (train)","K=2: ≈30,619 · K=4: ≈15,310 · K=8: ≈7,655"],["participation","full: fraction_train = fraction_evaluate = 1.0"]]},
+        {t:"p",v:"About 7.7 files per recording, so recordings were sliced into T = 16 windows. <strong>Still to confirm:</strong> whether the 80/20 split was made by recording (clean) or by file (possible leakage). Full participation buys a clean ablation with no sampling noise; it costs realism, since real deployments sample few of many devices."}
+      ],
+      quiz:[
+        {q:"What is client drift?",
+         o:["Clients dropping out mid-round","Local steps pulling each client toward its own optimum, so the average lands away from the global one","The learning rate decaying over rounds","Clients receiving stale global weights"],a:1,
+         h:"Think about where each client's local optimum sits under non-IID data.",
+         e:"With non-IID data each client heads to its own optimum; averaging those gives roughly the mean of the client optima, not the true global optimum."},
+        {q:"Zhao et al.: how much can accuracy drop on CIFAR-10 under highly skewed non-IID data?",
+         o:["Up to 11%","Up to 55%","Up to 5%","Up to 51%"],a:3,
+         h:"MNIST 11, CIFAR 51, KWS 55.",
+         e:"Up to 51% on CIFAR-10. 11% is MNIST and 55% is keyword spotting."},
+        {q:"What do Zhao et al. use to measure how non-IID a client is?",
+         o:["Earth mover's distance between its class distribution and the population's","The number of examples it holds","Its training loss","The learning rate times epochs"],a:0,
+         h:"A distance between two distributions.",
+         e:"Larger EMD means larger weight divergence and lower accuracy."},
+        {q:"What does 'systems heterogeneity' mean?",
+         o:["Clients' data is non-IID","Clients use different architectures","Devices differ in storage, compute and network, and few are active at once","Model updates can leak information"],a:2,
+         h:"Statistical = data, systems = …",
+         e:"Systems heterogeneity is about the devices. Non-IID data is statistical heterogeneity."},
+        {q:"What does FedProx add to each client's local objective?",
+         o:["A small shared dataset","Control variates","Gradient clipping","A proximal term (μ/2)‖w − w_t‖²"],a:3,
+         h:"It penalizes moving away from the global model.",
+         e:"The proximal term keeps local models near w_t. Shared data is Zhao's fix; control variates are SCAFFOLD."},
+        {q:"In FedProx, what does μ = 0 give?",
+         o:["FedAvg","SCAFFOLD","Clients frozen at w_t","FedSGD with B = 1"],a:0,
+         h:"Remove the penalty.",
+         e:"Without the proximal term, FedProx is plain FedAvg."},
+        {q:"In SCAFFOLD's local step y ← y − η(g_i − c_i + c), what does (c − c_i) do?",
+         o:["Adds noise for privacy","Corrects the client's gradient bias toward the global direction","Scales the learning rate","Selects which clients train"],a:1,
+         h:"c_i ≈ my gradient, c ≈ everyone's average.",
+         e:"Subtracting c_i and adding c removes client i's bias, so local steps head toward the true optimum even on very different data."},
+        {q:"In SCAFFOLD's notation, what is K?",
+         o:["The number of clients","The number of classes","The number of local steps","The number of rounds"],a:2,
+         h:"It differs from McMahan's notation.",
+         e:"In SCAFFOLD, N is the number of clients and K the local steps. In McMahan and my paper, K is the number of clients."},
+        {q:"In my code, which function does local training on a client?",
+         o:["NumPyClient.fit","central_evaluate","evaluate_fn_app","train_fn_app, decorated with @app.train()"],a:3,
+         h:"My code uses the new Message API.",
+         e:"train_fn_app loads the global weights, trains E epochs on the client's shard, and replies with new arrays and metrics."},
+        {q:"What is 'Global Eval Accuracy' in my paper computed on?",
+         o:["Each client's training data","The average of the clients' local models on their shards","The aggregated global model, on the server, on the full test set","Client 0's test shard"],a:2,
+         h:"evaluate_fn → central_evaluate → load_global_eval.",
+         e:"The aggregated global model is evaluated server-side after each round on all 15,313 test files and saved to CentralEvaluate.csv."},
+        {q:"Which loss does my code actually use?",
+         o:["slayer.loss.SpikeRate","CrossEntropyLoss on the time-averaged output spikes","slayer.loss.SpikeTime","Mean squared error on spike counts"],a:1,
+         h:"Look at train() in task.py.",
+         e:"outputs.mean over T gives logits, then CrossEntropyLoss. It is a rate-based softmax loss, not slayer.loss."},
+        {q:"Why did my paper not need FedProx or SCAFFOLD?",
+         o:["SNNs cannot drift","The IID split with full participation means client optima nearly coincide, so drift is small","The learning rate was small","Only 60 rounds were run"],a:1,
+         h:"Non-IID strength = 0 in the simulator.",
+         e:"With IID data each client's data looks like the global data. The fixes become relevant for the planned Dirichlet non-IID experiment."}
+      ],
+      cards:[
+        {f:"What is client drift?",b:"With non-IID data, local steps pull each client toward its own optimum, so the averaged model lands near the average of the client optima instead of the true global optimum. More local steps and more skew make it worse."},
+        {f:"Zhao et al.: weight divergence",b:"<span class='k'>‖w_FedAvg − w_SGD‖ / ‖w_SGD‖</span>Driven by the earth mover's distance between each client's class distribution and the population's."},
+        {f:"Zhao et al.: the numbers",b:"Accuracy drops up to 11% (MNIST), 51% (CIFAR-10), 55% (KWS). Fix: about 5% shared balanced data gives roughly +30% on CIFAR-10, at some cost to data locality."},
+        {f:"The four challenges (Li et al. survey)",b:"Expensive communication, systems heterogeneity, statistical heterogeneity, privacy."},
+        {f:"Statistical versus systems heterogeneity",b:"Statistical = the data is non-IID across clients. Systems = the devices differ in storage, compute, network and availability."},
+        {f:"Survey Section 2.3.2 in one breath",b:"Classical analyses assume every local solver is the same stochastic process (IID). FedAvg can diverge on heterogeneous data. Open gap: low participation and dropped devices."},
+        {f:"FedProx in two sentences",b:"<span class='k'>F_k(w) + (μ/2)‖w − w_t‖²</span>The proximal term keeps local models near the global model and limits drift; μ = 0 is FedAvg. It accepts partial work from slow devices and reports about 22% higher accuracy under high heterogeneity."},
+        {f:"SCAFFOLD in two sentences",b:"<span class='k'>y ← y − η(g_i − c_i + c)</span>Each client keeps a control variate estimating its gradient bias and subtracts it at every local step, which removes drift. With c_i = 0 it is FedAvg."},
+        {f:"The fix map",b:"Zhao = shared data. FedProx = proximal term. SCAFFOLD = control variates."},
+        {f:"SCAFFOLD notation trap",b:"In SCAFFOLD, N = clients and K = local steps. In McMahan and my paper, K = clients."},
+        {f:"Why I didn't need FedProx or SCAFFOLD",b:"IID split with full participation: client optima nearly coincide, so drift is small. They are the next step for a Dirichlet non-IID split."},
+        {f:"Designing the non-IID experiment",b:"Dirichlet class split with α = 0.1, 0.5, 1.0. Expect slower convergence, more oscillation, lower final accuracy, larger E starting to hurt, and FedProx or SCAFFOLD recovering part of the gap."},
+        {f:"One Flower round in my code",b:"Broadcast the global ArrayRecord → train_fn_app trains E epochs on the 1/K shard and returns arrays + num-examples → FedAvg weighted average → evaluate_fn tests the global model on the full test set. Repeat 60 times."},
+        {f:"What is Global Eval Accuracy computed on?",b:"The aggregated global model, on the server, after each round, on the full 15,313-file test set (CentralEvaluate.csv)."},
+        {f:"Old Flower API versus mine",b:"fit → @app.train (train_fn_app); evaluate → @app.evaluate (evaluate_fn_app); get_parameters → ArrayRecord(state_dict); start_server → @app.main + strategy.start."},
+        {f:"Loss, optimizer and data in my code",b:"CrossEntropyLoss on time-averaged output spikes; Adam lr 0.001. Data: 61,237 train / 15,313 test files, IID 1/K shards (≈15,310 per client at K = 4)."},
+        {f:"Full participation: what it buys and costs",b:"Buys a clean ablation with no client-sampling noise. Costs realism: real deployments sample a small fraction of many devices."}
+      ]
     }]
   }]
 };
@@ -902,6 +1008,57 @@ const WIDGETS={
     $("fa-1").textContent=first.toFixed(3);$("fa-2").textContent=firstS.toFixed(3);$("fa-3").textContent=hit;
    }
    ["fa-k","fa-u","fa-e"].forEach(i=>$(i).addEventListener("input",run));run();
+  }},
+
+ drift:{
+  html:`<p class="w-t">Three clients, each with its own optimum. Compare how FedAvg, FedProx and SCAFFOLD handle drift.</p>
+   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="dr-m">
+    <button class="btn ghost" style="margin:0;padding:7px 14px" data-m="avg">FedAvg</button>
+    <button class="btn ghost" style="margin:0;padding:7px 14px" data-m="prox">FedProx</button>
+    <button class="btn ghost" style="margin:0;padding:7px 14px" data-m="scaf">SCAFFOLD</button>
+   </div>
+   <canvas id="dr-c" style="width:100%;height:340px;display:block"></canvas>
+   <div class="trace-lab"><span><i style="background:var(--ok)"></i>client optima</span><span><i style="background:var(--ink)"></i>true global optimum</span><span><i style="background:var(--volt)"></i>global model per round</span><span><i style="background:var(--curr)"></i>client paths, last round</span></div>
+   ${rng("dr-h","non-IID strength",0,1,.05,1)}${rng("dr-k","local steps",1,40,1,25)}${rng("dr-mu","FedProx μ",0,3,.1,1)}
+   <div class="stats"><div class="stat"><span>final distance to optimum</span><b id="dr-d">—</b></div><div class="stat"><span>method</span><b id="dr-n">—</b></div></div>`,
+  init(){
+   const $=id=>document.getElementById(id),cv=$("dr-c"),ctx=cv.getContext("2d");let M="avg";
+   const bA=[[[4,0],[0,.5]],[[.5,0],[0,4]],[[2,1.5],[1.5,2]]],bO=[[-1.6,1.2],[1.8,1.0],[.2,-1.7]];
+   const mv=(A,v)=>[A[0][0]*v[0]+A[0][1]*v[1],A[1][0]*v[0]+A[1][1]*v[1]];
+   const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim()||"#888";
+   function sim(){
+    const h=+$("dr-h").value,K=+$("dr-k").value,mu=+$("dr-mu").value,eta=.08,R=10;
+    const A=bA.map(B=>[[1+h*(B[0][0]-1),h*B[0][1]],[h*B[1][0],1+h*(B[1][1]-1)]]),o=bO.map(p=>[p[0]*h,p[1]*h]);
+    let S=[[0,0],[0,0]],b=[0,0];A.forEach((a,i)=>{S[0][0]+=a[0][0];S[0][1]+=a[0][1];S[1][0]+=a[1][0];S[1][1]+=a[1][1];const t=mv(a,o[i]);b[0]+=t[0];b[1]+=t[1];});
+    const det=S[0][0]*S[1][1]-S[0][1]*S[1][0],xs=[(S[1][1]*b[0]-S[0][1]*b[1])/det,(-S[1][0]*b[0]+S[0][0]*b[1])/det];
+    let x=[-2.4,-2.4],c=[0,0],ci=A.map(()=>[0,0]),traj=[x.slice()],paths=[];
+    for(let r=0;r<R;r++){const ys=[],cn=[];paths=[];
+     A.forEach((a,i)=>{let y=x.slice(),p=[y.slice()];for(let k=0;k<K;k++){let g=mv(a,[y[0]-o[i][0],y[1]-o[i][1]]);
+      if(M==="prox")g=[g[0]+mu*(y[0]-x[0]),g[1]+mu*(y[1]-x[1])];
+      if(M==="scaf")g=[g[0]-ci[i][0]+c[0],g[1]-ci[i][1]+c[1]];
+      y=[y[0]-eta*g[0],y[1]-eta*g[1]];p.push(y.slice());}
+      ys.push(y);paths.push(p);cn.push([ci[i][0]-c[0]+(x[0]-y[0])/(K*eta),ci[i][1]-c[1]+(x[1]-y[1])/(K*eta)]);});
+     x=[ys.reduce((s,y)=>s+y[0],0)/3,ys.reduce((s,y)=>s+y[1],0)/3];
+     if(M==="scaf"){ci=cn;c=[ci.reduce((s,v)=>s+v[0],0)/3,ci.reduce((s,v)=>s+v[1],0)/3];}
+     traj.push(x.slice());}
+    return{o,xs,traj,paths,x};}
+   function run(){
+    $("dr-hv").textContent=(+$("dr-h").value).toFixed(2);$("dr-kv").textContent=$("dr-k").value;$("dr-muv").textContent=(+$("dr-mu").value).toFixed(1);
+    $("dr-mu").parentNode.style.opacity=M==="prox"?1:.4;
+    document.querySelectorAll("#dr-m button").forEach(b=>{const on=b.dataset.m===M;b.style.background=on?"var(--ink)":"none";b.style.color=on?"var(--paper)":"var(--ink)";});
+    const W=cv.clientWidth,H=340,d=devicePixelRatio||1;cv.width=W*d;cv.height=H*d;ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,W,H);
+    const sc=Math.min(W,H)/6.2,cx=W/2,cy=H/2,P=p=>[cx+p[0]*sc,cy-p[1]*sc],s=sim();
+    ctx.strokeStyle=css("--rule");ctx.lineWidth=1;for(let g=-3;g<=3;g++){let a=P([g,-3]),e=P([g,3]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(e[0],e[1]);ctx.stroke();a=P([-3,g]);e=P([3,g]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(e[0],e[1]);ctx.stroke();}
+    ctx.strokeStyle=css("--curr");ctx.lineWidth=1.5;s.paths.forEach(p=>{ctx.beginPath();p.forEach((q,i)=>{const z=P(q);i?ctx.lineTo(z[0],z[1]):ctx.moveTo(z[0],z[1]);});ctx.stroke();});
+    ctx.strokeStyle=css("--volt");ctx.lineWidth=2.5;ctx.beginPath();s.traj.forEach((q,i)=>{const z=P(q);i?ctx.lineTo(z[0],z[1]):ctx.moveTo(z[0],z[1]);});ctx.stroke();
+    ctx.fillStyle=css("--volt");s.traj.forEach(q=>{const z=P(q);ctx.beginPath();ctx.arc(z[0],z[1],3.5,0,7);ctx.fill();});
+    ctx.fillStyle=css("--ok");s.o.forEach(q=>{const z=P(q);ctx.fillRect(z[0]-6,z[1]-6,12,12);});
+    const z=P(s.xs);ctx.fillStyle=css("--ink");ctx.beginPath();ctx.arc(z[0],z[1],7,0,7);ctx.fill();
+    $("dr-d").textContent=Math.hypot(s.x[0]-s.xs[0],s.x[1]-s.xs[1]).toFixed(3);$("dr-n").textContent={avg:"FedAvg",prox:"FedProx",scaf:"SCAFFOLD"}[M];
+   }
+   document.querySelectorAll("#dr-m button").forEach(b=>b.onclick=()=>{M=b.dataset.m;run();});
+   ["dr-h","dr-k","dr-mu"].forEach(i=>$(i).addEventListener("input",run));
+   addEventListener("resize",()=>{if(document.getElementById("dr-c"))run();});run();
   }}
 };
 
