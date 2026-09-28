@@ -535,6 +535,102 @@ const SITE = {
         {f:"Total parameters and bytes",b:"<span class='k'>≈ 607,076 × 4 B ≈ 2.43 MB</span>Upload per round = M × K; up + down = × 2. SpkDense1 ≈ 87% of it."},
         {f:"Why stride 4, and what does it cost?",b:"Only three conv layers, a short gradient path, fewer dead neurons, a small model. Cost: little window overlap, so fine spatial detail is lost."}
       ]
+    },{
+      id:"day5", n:"Day 5", title:"FedAvg from first principles",
+      blurb:"McMahan et al. 2017: the federated objective, FedSGD versus FedAvg, Algorithm 1, and what K, C, E, B and η each do.",
+      notes:[
+        {t:"h",v:"The paper"},
+        {t:"p",v:"<strong>McMahan, Moore, Ramage, Hampson and Agüera y Arcas, \"Communication-Efficient Learning of Deep Networks from Decentralized Data\", AISTATS 2017.</strong> It introduced FederatedAveraging. Reference [14] in my paper. Free on arXiv as 1602.05629."},
+        {t:"h",v:"Why federated learning at all"},
+        {t:"p",v:"Phones hold rich, private data. Instead of uploading it, each client trains locally and sends only an <strong>update to the current global model</strong>. The server combines the updates. Raw data never leaves the device."},
+        {t:"p",v:"Federated optimization differs from data-centre training in four ways: data is <strong>non-IID</strong>, <strong>unbalanced</strong>, <strong>massively distributed</strong>, and <strong>communication is limited</strong>. On a phone, computation is almost free but upload bandwidth is 1 MB/s or less. So the goal is to spend more computation to need fewer rounds."},
+        {t:"note",class:"warn",v:"<p><b>Is it private?</b> FL keeps raw data local and sends minimal, ephemeral updates that cannot contain more information than the data. It does <b>not</b> guarantee privacy, and updates can still leak information. My paper makes no formal privacy claim.</p>"},
+        {t:"h",v:"The objective: a weighted sum of client losses"},
+        {t:"eq",v:"f(w) = (1/n) Σᵢ fᵢ(w)\n<em>ordinary training: the average loss over all n examples</em>"},
+        {t:"eq",v:"f(w) = Σₖ (nₖ / n) · Fₖ(w),     Fₖ(w) = (1/nₖ) Σ_{i ∈ 𝒫ₖ} fᵢ(w)\n<em>the same number, computed client by client</em>"},
+        {t:"p",v:"Average within each client first, then combine clients weighted by their share of the data. The weights make every <strong>example</strong> count equally, not every client."},
+        {t:"tbl",v:[["client","examples","losses","Fₖ","nₖ/n"],["A","2","1, 3","2","0.2"],["B","3","2, 2, 5","3","0.3"],["C","5","1, 1, 1, 1, 6","2","0.5"]]},
+        {t:"p",v:"All ten examples together: 23 / 10 = 2.3. Weighted by client: 0.2·2 + 0.3·3 + 0.5·2 = 2.3. A plain average of the clients would give 2.33, which is wrong."},
+        {t:"p",v:"<strong>IID</strong> means 𝔼[Fₖ(w)] = f(w): with a random split, each client's loss is on average the global loss. <strong>Non-IID</strong> means Fₖ can be an arbitrarily bad approximation of f. With my equal IID shards, nₖ/n = 1/K for every client, so the weighted average becomes a plain average."},
+        {t:"h",v:"From FedSGD to FedAvg"},
+        {t:"p",v:"<strong>FedSGD:</strong> each selected client computes one gradient on all its local data, gₖ = ∇Fₖ(wₜ). The server takes one step with the weighted sum:"},
+        {t:"eq",v:"wₜ₊₁ = wₜ − η Σₖ (nₖ/n) gₖ"},
+        {t:"p",v:"The key rewrite: the same update can be done as each client stepping itself, wᵏ = wₜ − η gₖ, and the server <strong>averaging the models</strong>. Once written that way, a client can take many steps before averaging. That is <strong>FedAvg</strong>."},
+        {t:"eq",v:"wₜ₊₁ = Σₖ (nₖ/n) · wₜ₊₁ᵏ\n<em>average the weights, not the gradients</em>"},
+        {t:"tbl",v:[["knob","meaning","my paper"],["K","total clients","2, 4, 8"],["C","fraction of clients per round","1 (all)"],["E","local epochs per round","2, 4, 8"],["B","local batch size (∞ = whole local set)","32, 64, 128"],["η","learning rate","0.001"]]},
+        {t:"eq",v:"uₖ = E · nₖ / B        local updates per round\nFedSGD = FedAvg with E = 1, B = ∞  (one step per round)"},
+        {t:"h",v:"Algorithm 1 in plain words"},
+        {t:"eq",v:"Server:  initialise w₀\n         each round t:  m = max(C·K, 1);  pick Sₜ (m random clients)\n                        every k in Sₜ in parallel:  wₜ₊₁ᵏ = ClientUpdate(k, wₜ)\n                        wₜ₊₁ = Σₖ (nₖ/n) wₜ₊₁ᵏ\nClient:  split 𝒫ₖ into batches of size B\n         for E epochs, for each batch b:  w ← w − η ∇ℓ(w; b)\n         return w"},
+        {t:"h",v:"Why averaging models does not break (their Figure 1)"},
+        {t:"p",v:"Two MNIST models trained on different data were mixed as θw + (1 − θ)w′. With <strong>different</strong> random initialisations, the average is a loss spike. With the <strong>same</strong> initialisation, ½w + ½w′ has lower loss than either parent. FedAvg is safe because every client starts each round from the same wₜ."},
+        {t:"h",v:"Why averaging K models is not K times the steps"},
+        {t:"p",v:"Clients step in parallel from the same start, each on its own data, and their models are averaged. One model taking K times the steps would take them one after another, each building on the last. A one-number example: two clients pull toward 2 and 4, η = 0.5, two local steps each, start at 0."},
+        {t:"tbl",v:[["approach","total steps","result after one round"],["FedAvg (2 clients × 2 steps)","4","2.25"],["one model, 4 steps in a row","4","2.8125"]]},
+        {t:"p",v:"FedAvg's round equals two sequential steps, not four. Averaging gives about one client's path, which is why more clients (less data each, fewer steps) means less progress per round, and more local epochs helps."},
+        {t:"widget",v:"fedavg"},
+        {t:"h",v:"Their E and B experiments (Table 2, Figure 2)"},
+        {t:"p",v:"With C = 0.1, adding local computation cut communication dramatically. MNIST CNN, IID, target 99%: FedSGD needed <strong>626 rounds</strong>; E = 20, B = 10 needed <strong>18 (about 35×)</strong>. Shakespeare LSTM, non-IID: up to <strong>95×</strong>. Lower B first: it is nearly free on parallel hardware."},
+        {t:"p",v:"Caveats: gains are smaller for pathological non-IID MNIST (2.8–3.7×), and one setting (non-IID, E = 5, B = ∞) needed 1000 rounds, <strong>slower</strong> than FedSGD's 483. Very large E can plateau or diverge (their Figure 3), so reduce local work late in training."},
+        {t:"h",v:"How my results compare"},
+        {t:"tbl",v:[["effect","McMahan","my paper (rounds to 70%)"],["more local epochs E","fewer rounds","E 2 → 8: 17 → 6 (K = 2), 29 → 11 (K = 4)"],["batch size B","smaller B faster","larger B faster: 11 → 7 → 6 for B = 32, 64, 128"]]},
+        {t:"p",v:"A plausible reason for the B difference: I used a fixed η = 0.001 with surrogate-gradient SNNs, so larger batches mean less gradient noise. McMahan tuned η for every setting."},
+        {t:"note",v:"<p><b>Related-work sentence.</b> Consistent with McMahan et al. [14], who showed that more local computation per round sharply reduces communication rounds, raising E from 2 to 8 reaches 70% accuracy in roughly 2.5–3× fewer rounds. Unlike their results, larger local batches converged faster in our spiking setting, likely because they reduce gradient noise under a fixed learning rate.</p>"}
+      ],
+      quiz:[
+        {q:"What does each client send to the server in federated learning?",
+         o:["Its raw data, encrypted","Its predictions on a shared test set","An update to the current global model","A summary of its data distribution"],a:2,
+         h:"The raw data never leaves the device.",
+         e:"Each client computes an update to the current global model, for example its new weights, and only that is communicated."},
+        {q:"Which is NOT one of the four properties of federated optimization in Section 1?",
+         o:["Non-IID","Asynchronous updates","Unbalanced","Limited communication"],a:1,
+         h:"The fourth one is massively distributed.",
+         e:"The four are non-IID, unbalanced, massively distributed and limited communication. The paper assumes synchronous rounds."},
+        {q:"Why is the global objective weighted by nₖ/n instead of a plain average of client losses?",
+         o:["So every example counts equally","So small clients count more","To speed up training","Because clients are non-IID"],a:0,
+         h:"Think of the A, B, C example: 2.3 versus 2.33.",
+         e:"Weighting by data share makes the client-by-client sum equal to the plain average over all examples. With equal IID shards the weights are all 1/K."},
+        {q:"Which settings turn FedAvg into FedSGD?",
+         o:["E = 1, B = 1","E = ∞, B = 1","E = 5, B = 10","E = 1, B = ∞"],a:3,
+         h:"One pass, one batch.",
+         e:"B = ∞ means the whole local dataset is one batch, and E = 1 means one pass: one gradient step per round."},
+        {q:"A client has nₖ = 1000 examples, E = 5, B = 50. How many local updates per round?",
+         o:["20","250","100","5000"],a:2,
+         h:"uₖ = E · nₖ / B.",
+         e:"5 × 1000 / 50 = 100."},
+        {q:"When does averaging two models give a model better than either parent (their Figure 1)?",
+         o:["When they started from the same initialization","When they used different random seeds","When the mixing weight θ is 1.2","When they were trained on the same data"],a:0,
+         h:"Compare the left and right plots.",
+         e:"With a common initialization, ½w + ½w′ has lower loss than either parent. With different seeds the middle is a loss spike. FedAvg sends every client the same wₜ."},
+        {q:"MNIST CNN, IID, E = 20, B = 10: how many rounds versus FedSGD's 626?",
+         o:["179","1000","483","18"],a:3,
+         h:"About 35× faster.",
+         e:"18 rounds, a 34.8× speedup. 179 is E = 5, B = ∞; 483 is FedSGD on non-IID; 1000 is the one setting that was slower."},
+        {q:"Which Table 2 setting was slower than FedSGD?",
+         o:["CNN IID, E = 20, B = 10","CNN non-IID, E = 5, B = ∞","LSTM non-IID, E = 5, B = 10","LSTM IID, E = 1, B = 50"],a:1,
+         h:"Non-IID with large batches.",
+         e:"CNN non-IID with E = 5 and B = ∞ took 1000 rounds versus 483 for FedSGD. More local work does not always help on non-IID data."},
+        {q:"How does my batch-size result compare with McMahan's, and why might it differ?",
+         o:["Same direction; both found smaller B faster","B had no effect in my runs","Opposite: larger B was faster for me, plausibly because fixed η = 0.001 makes gradient noise hurt","Opposite, because my data was non-IID"],a:2,
+         h:"11 → 7 → 6 rounds for B = 32, 64, 128.",
+         e:"McMahan tuned η for every setting and found smaller B better. With a fixed learning rate and surrogate-gradient SNNs, larger batches reduce noise. Call it a plausible reason, since it was not tested directly."},
+        {q:"In the one-number example, FedAvg with 2 clients × 2 steps reached 2.25 after one round. What does one model reach with 4 sequential steps?",
+         o:["2.25","3","1.5","2.8125"],a:3,
+         h:"0 → 1.5 → 2.25 → 2.625 → …",
+         e:"2.8125. FedAvg's round matched only two sequential steps, because parallel steps from the same start do not build on each other."}
+      ],
+      cards:[
+        {f:"The federated objective",b:"<span class='k'>f(w) = Σₖ (nₖ/n) Fₖ(w)</span>A data-weighted sum of client losses. Equal to the plain average over all examples."},
+        {f:"The FedAvg aggregation rule",b:"<span class='k'>wₜ₊₁ = Σₖ (nₖ/n) wₜ₊₁ᵏ</span>Average the client weights, weighted by data size. With my equal IID shards this is a plain 1/K average."},
+        {f:"FedSGD versus FedAvg",b:"FedSGD: one gradient per client, one server step per round. FedAvg: E epochs of local SGD with batch B, then average the weights. FedSGD = FedAvg with E = 1, B = ∞."},
+        {f:"What do K, C, E, B and η do?",b:"K total clients; C fraction per round (mine 1); E local epochs; B local batch size; η learning rate. Local updates per round uₖ = E·nₖ/B."},
+        {f:"What does IID mean here?",b:"<span class='k'>𝔼[Fₖ(w)] = f(w)</span>With a random split, each client's loss is on average the global loss. Non-IID: Fₖ can be a bad approximation of f."},
+        {f:"Why is averaging models safe in FedAvg?",b:"Every client starts each round from the same wₜ. Figure 1: with a shared initialization the average beats either parent; with different seeds it spikes."},
+        {f:"45 seconds: why is averaging K models not K times the steps?",b:"Clients step in parallel from the same start, each on its own data, and are averaged. That gives about one client's path, not K paths chained. Example: 2.25 after a FedAvg round versus 2.8125 after four sequential steps."},
+        {f:"McMahan's E and B finding",b:"More local computation per round, larger E or smaller B, means far fewer rounds. MNIST CNN IID: 626 → 18 rounds, about 35×. Lower B first."},
+        {f:"Where more local work did NOT help",b:"CNN non-IID with E = 5, B = ∞: 1000 rounds versus 483 for FedSGD. Very large E can also plateau or diverge (Figure 3)."},
+        {f:"My results versus McMahan",b:"E agrees: E 2 → 8 gave about 2.5–3× fewer rounds. B is opposite: larger B was faster for me, plausibly because fixed η = 0.001 makes gradient noise costly."},
+        {f:"Is federated learning private?",b:"It keeps raw data local and sends minimal, ephemeral updates, but gives no formal guarantee; updates can leak. My paper makes no privacy claim."}
+      ]
     }]
   }]
 };
@@ -770,6 +866,42 @@ const WIDGETS={
     $("c-1").textContent=f(M);$("c-2").textContent=f(M*K);$("c-3").textContent=f(M*K*2);$("c-4").textContent=f(M*K*2*R);
    }
    ["c-k","c-b","c-r"].forEach(i=>$(i).addEventListener("input",run));run();
+  }},
+
+ fedavg:{
+  html:`<p class="w-t">A one-number model. Each client pulls w toward its own target; the best global w is 3. Compare FedAvg with one model taking all K × u steps in a row.</p>
+   <svg viewBox="0 0 660 250" width="100%" role="img"><title>FedAvg versus sequential steps</title>
+    <line x1="56" y1="206" x2="632" y2="206" stroke="var(--rule-2)" stroke-width="1"/>
+    <line x1="56" y1="30" x2="56" y2="206" stroke="var(--rule-2)" stroke-width="1"/>
+    <line x1="56" y1="54" x2="632" y2="54" stroke="var(--ok)" stroke-width="1" class="dash"/>
+    <text x="50" y="58" text-anchor="end" font-size="11" fill="var(--ok)" font-family="IBM Plex Mono">3</text>
+    <text x="50" y="210" text-anchor="end" font-size="11" fill="var(--ink-3)" font-family="IBM Plex Mono">0</text>
+    <polyline id="fa-f" fill="none" stroke="var(--volt)" stroke-width="2.5"/><g id="fa-fd"></g>
+    <polyline id="fa-s" fill="none" stroke="var(--curr)" stroke-width="2" stroke-dasharray="5 3"/>
+    <text x="344" y="236" text-anchor="middle" font-size="11" fill="var(--ink-3)">communication round</text>
+   </svg>
+   <div class="trace-lab"><span><i style="background:var(--volt)"></i>FedAvg global w</span><span><i style="background:var(--curr)"></i>one model, K × u sequential steps per round</span><span><i style="background:var(--ok)"></i>best w = 3</span></div>
+   ${rng("fa-k","clients K",2,8,1,2)}${rng("fa-u","local steps u",1,8,1,2)}${rng("fa-e","η",.05,.5,.05,.2)}
+   <div class="stats"><div class="stat"><span>FedAvg after round 1</span><b id="fa-1">—</b></div><div class="stat"><span>sequential after round 1</span><b id="fa-2">—</b></div><div class="stat"><span>FedAvg rounds to 2.9</span><b id="fa-3">—</b></div></div>`,
+  init(){
+   const R=10,$=id=>document.getElementById(id),py=w=>206-w/3.3*168;
+   function run(){
+    const K=+$("fa-k").value,u=+$("fa-u").value,e=+$("fa-e").value;
+    $("fa-kv").textContent=K;$("fa-uv").textContent=u;$("fa-ev").textContent=e.toFixed(2);
+    const tg=[];for(let k=0;k<K;k++)tg.push(K===1?3:2+2*k/(K-1));
+    let w=0,s=0,pf=[px(0,R,56,632).toFixed(1)+","+py(0).toFixed(1)],ps=[pf[0]],dots="",first=null,firstS=null,hit="—";
+    for(let r=1;r<=R;r++){
+     let acc=0;tg.forEach(a=>{let x=w;for(let i=0;i<u;i++)x-=e*(x-a);acc+=x;});w=acc/K;
+     for(let i=0;i<K*u;i++)s-=e*(s-3);
+     if(r===1){first=w;firstS=s;}
+     if(hit==="—"&&w>=2.9)hit=r;
+     const X=px(r,R,56,632).toFixed(1);pf.push(X+","+py(w).toFixed(1));ps.push(X+","+py(s).toFixed(1));
+     dots+=`<circle cx="${X}" cy="${py(w).toFixed(1)}" r="3" fill="var(--volt)"/>`;
+    }
+    $("fa-f").setAttribute("points",pf.join(" "));$("fa-s").setAttribute("points",ps.join(" "));$("fa-fd").innerHTML=dots;
+    $("fa-1").textContent=first.toFixed(3);$("fa-2").textContent=firstS.toFixed(3);$("fa-3").textContent=hit;
+   }
+   ["fa-k","fa-u","fa-e"].forEach(i=>$(i).addEventListener("input",run));run();
   }}
 };
 
