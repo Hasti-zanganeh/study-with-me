@@ -1236,4 +1236,1242 @@ route();
   Built by Hasti Zanganeh &middot; <a href="https://github.com/Hasti-zanganeh/study-with-me" style="color:var(--ink-2)">source on GitHub</a><br>Progress is saved in your own browser and never leaves it.
 </footer></div>
 </body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Study with me</title>
+<meta name="description" content="Open study notes with interactive diagrams, quizzes and flashcards. Currently covering spiking neural networks.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF0F4; --panel:#FFFFFF; --panel-2:#F5F7FA;
+  --ink:#12161F; --ink-2:#4A5568; --ink-3:#7C8797;
+  --rule:#D9DEE6; --rule-2:#C3CAD6;
+  --volt:#6B4EFF; --curr:#E08A16; --spike:#F0455C; --ok:#1B9A6B;
+  --r:10px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1117; --panel:#161A22; --panel-2:#1C212B;
+    --ink:#E8ECF2; --ink-2:#A3AEBF; --ink-3:#6F7B8D;
+    --rule:#262C38; --rule-2:#333B4A;
+    --volt:#9585FF; --curr:#F0A93A; --spike:#FF6B7D; --ok:#3FCB96;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1117; --panel:#161A22; --panel-2:#1C212B;
+  --ink:#E8ECF2; --ink-2:#A3AEBF; --ink-3:#6F7B8D;
+  --rule:#262C38; --rule-2:#333B4A;
+  --volt:#9585FF; --curr:#F0A93A; --spike:#FF6B7D; --ok:#3FCB96;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(64px + env(safe-area-inset-top,0px));-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:'Space Grotesk',system-ui,-apple-system,sans-serif;
+  font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--volt);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- chrome ---------- */
+.bar{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:50;
+  background:color-mix(in srgb,var(--paper) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--rule);
+}
+.bar-in{max-width:1080px;margin:0 auto;padding:0 20px;height:60px;display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:-.02em;font-size:15px;text-decoration:none}
+.brand svg{display:block}
+.crumb{color:var(--ink-3);font-size:14px;display:flex;align-items:center;gap:8px;min-width:0}
+.crumb b{color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp{flex:1}
+.icon-btn{background:none;border:1px solid var(--rule);width:34px;height:34px;border-radius:8px;display:grid;place-items:center;color:var(--ink-2)}
+.icon-btn:hover{border-color:var(--rule-2);color:var(--ink)}
+
+main{max-width:1080px;margin:0 auto;padding:0 20px 80px}
+.wrap{max-width:720px}
+
+/* ---------- hero ---------- */
+.hero{padding:56px 0 40px;border-bottom:1px solid var(--rule);margin-bottom:40px}
+.hero h1{font-size:clamp(34px,6vw,52px);line-height:1.04;letter-spacing:-.035em;margin:0 0 14px;font-weight:700;max-width:16ch}
+.hero p{font-family:'Source Serif 4',Georgia,serif;font-size:18px;line-height:1.6;color:var(--ink-2);margin:0;max-width:56ch}
+.trace-box{margin:34px 0 0;background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:18px 16px 12px;overflow:hidden}
+.trace-lab{display:flex;gap:18px;font-size:12px;color:var(--ink-3);margin-top:8px;flex-wrap:wrap}
+.trace-lab i{display:inline-block;width:16px;height:3px;border-radius:2px;margin-right:6px;vertical-align:2px;font-style:normal}
+.dash{stroke-dasharray:5 4}
+.draw{stroke-dasharray:3000;stroke-dashoffset:3000;animation:draw 2.4s cubic-bezier(.4,0,.2,1) .25s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.pop{opacity:0;animation:pop .35s ease forwards}
+@keyframes pop{to{opacity:1}}
+
+/* ---------- lists ---------- */
+h2.sec{font-size:13px;font-weight:500;color:var(--ink-3);margin:0 0 16px;letter-spacing:.01em}
+.subj{display:grid;gap:14px;margin-bottom:44px}
+.card{
+  background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);
+  padding:22px;text-align:left;width:100%;display:block;
+  transition:border-color .15s,transform .15s;
+}
+.card:hover{border-color:var(--rule-2)}
+.card:active{transform:scale(.995)}
+.card h3{margin:0 0 6px;font-size:20px;letter-spacing:-.02em;font-weight:700}
+.card p{margin:0;color:var(--ink-2);font-size:14.5px;font-family:'Source Serif 4',Georgia,serif;line-height:1.55}
+.card .meta{margin-top:14px;display:flex;gap:16px;font-size:12.5px;color:var(--ink-3);align-items:center}
+
+.unit{display:flex;gap:18px;align-items:flex-start;background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:20px;text-align:left;width:100%;transition:border-color .15s}
+.unit:hover{border-color:var(--rule-2)}
+.unit-n{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:3px;white-space:nowrap}
+.unit h3{margin:0 0 5px;font-size:17.5px;letter-spacing:-.015em;font-weight:500}
+.unit p{margin:0;font-size:14px;color:var(--ink-2);font-family:'Source Serif 4',Georgia,serif}
+.pill{font-size:11.5px;color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 35%,transparent);padding:2px 8px;border-radius:20px;white-space:nowrap}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--rule);margin:26px 0 30px;position:sticky;top:calc(60px + env(safe-area-inset-top,0px));background:var(--paper);z-index:40;overflow-x:auto}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:11px 15px;color:var(--ink-3);font-size:14.5px;white-space:nowrap;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--volt);font-weight:500}
+
+/* ---------- notes ---------- */
+.notes{font-family:'Source Serif 4',Georgia,serif;font-size:17.5px;line-height:1.68;max-width:68ch}
+.notes h3{font-family:'Space Grotesk',sans-serif;font-size:21px;letter-spacing:-.02em;margin:42px 0 14px;font-weight:700;line-height:1.25}
+.notes h3:first-child{margin-top:0}
+.notes p{margin:0 0 18px}
+.notes strong{font-weight:600}
+.notes ul{margin:0 0 18px;padding-left:22px}
+.notes li{margin-bottom:8px}
+.eq{
+  font-family:'IBM Plex Mono',monospace;font-size:15px;line-height:1.7;
+  background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--volt);
+  border-radius:0 var(--r) var(--r) 0;padding:16px 18px;margin:0 0 20px;overflow-x:auto;white-space:pre;
+}
+.eq em{color:var(--ink-3);font-style:normal;font-size:13.5px;font-family:'Space Grotesk',sans-serif}
+.note-box{background:var(--panel-2);border:1px solid var(--rule);border-radius:var(--r);padding:16px 18px;margin:0 0 20px;font-size:16px}
+.note-box p:last-child{margin-bottom:0}
+.note-box.warn{border-left:3px solid var(--spike);border-radius:0 var(--r) var(--r) 0}
+.tbl{width:100%;border-collapse:collapse;margin:0 0 22px;font-family:'Space Grotesk',sans-serif;font-size:14.5px;display:block;overflow-x:auto}
+.tbl th{text-align:left;font-weight:500;color:var(--ink-3);padding:8px 14px 8px 0;border-bottom:1px solid var(--rule-2);font-size:13px}
+.tbl td{padding:9px 14px 9px 0;border-bottom:1px solid var(--rule)}
+.tbl code{font-family:'IBM Plex Mono',monospace;font-size:13px}
+
+/* ---------- widgets ---------- */
+.w{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:20px;margin:0 0 24px;font-family:'Space Grotesk',sans-serif}
+.w-t{font-size:13px;color:var(--ink-3);margin:0 0 14px}
+.ctl{display:flex;align-items:center;gap:12px;margin-top:12px;font-size:13.5px;color:var(--ink-2)}
+.ctl label{min-width:92px}
+.ctl input[type=range]{flex:1;accent-color:var(--volt);min-width:0}
+.ctl output{min-width:58px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
+.stat{background:var(--panel-2);border-radius:8px;padding:12px}
+.stat span{display:block;font-size:11.5px;color:var(--ink-3)}
+.stat b{font-size:20px;font-weight:500;font-family:'IBM Plex Mono',monospace}
+
+/* ---------- quiz ---------- */
+.q{max-width:620px}
+.q-top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--ink-3);margin-bottom:8px}
+.q-bar{height:2px;background:var(--rule);border-radius:2px;overflow:hidden;margin-bottom:28px}
+.q-bar i{display:block;height:100%;background:var(--volt);transition:width .3s}
+.q-p{font-size:19px;line-height:1.45;margin:0 0 22px;letter-spacing:-.01em}
+.opt{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:14px 16px;margin-bottom:9px;font-size:15px;transition:border-color .15s}
+.opt:hover:not(:disabled){border-color:var(--rule-2)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--panel))}
+.opt.wrong{border-color:var(--spike);background:color-mix(in srgb,var(--spike) 8%,var(--panel))}
+.expl{background:var(--panel-2);border-radius:var(--r);padding:16px 18px;margin-top:16px;font-family:'Source Serif 4',Georgia,serif;font-size:15.5px;line-height:1.6}
+.expl b{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:14.5px}
+.hint{background:none;border:0;color:var(--ink-3);font-size:13.5px;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.btn{background:var(--ink);color:var(--paper);border:0;border-radius:8px;padding:11px 20px;font-size:14.5px;font-weight:500;margin-top:18px}
+.btn.ghost{background:none;border:1px solid var(--rule-2);color:var(--ink)}
+.score{text-align:center;padding:40px 0}
+.score b{display:block;font-size:56px;font-family:'IBM Plex Mono',monospace;font-weight:500;letter-spacing:-.03em}
+.score p{color:var(--ink-2);font-family:'Source Serif 4',Georgia,serif;margin:6px 0 0}
+
+/* ---------- flashcards ---------- */
+.fc-wrap{max-width:560px}
+.fc{
+  background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);
+  min-height:260px;padding:32px;display:flex;flex-direction:column;justify-content:center;
+  text-align:center;cursor:pointer;position:relative;
+}
+.fc-side{font-size:11.5px;color:var(--ink-3);position:absolute;top:14px;left:18px}
+.fc-q{font-size:20px;line-height:1.4;letter-spacing:-.01em}
+.fc-a{font-family:'Source Serif 4',Georgia,serif;font-size:17px;line-height:1.6;color:var(--ink-2)}
+.fc-a .k{display:block;font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--ink);margin-bottom:12px}
+.fc-nav{display:flex;align-items:center;justify-content:space-between;margin-top:18px;font-size:13.5px;color:var(--ink-3)}
+.fc-nav button{background:none;border:1px solid var(--rule);border-radius:8px;padding:8px 16px;color:var(--ink-2)}
+.fc-nav button:disabled{opacity:.35;cursor:default}
+
+.empty{color:var(--ink-3);font-family:'Source Serif 4',Georgia,serif;padding:40px 0}
+footer{border-top:1px solid var(--rule);margin-top:60px;padding:24px 0;font-size:13px;color:var(--ink-3)}
+@media(max-width:640px){
+  .bar-in{padding:0 16px}main{padding:0 16px 60px}
+  .hero{padding:36px 0 28px}
+  .notes{font-size:17px}
+  .unit{gap:12px;padding:16px}
+  .fc{padding:24px;min-height:220px}
+}
+</style>
+</head>
+<body>
+
+<header class="bar"><div class="bar-in">
+  <a class="brand" href="#/" id="brand">
+    <svg width="22" height="18" viewBox="0 0 22 18" fill="none" aria-hidden="true">
+      <path d="M1 15 C4 15, 4 4, 7 4 L7 15 C10 15, 10 4, 13 4 L13 15 C16 15, 16 4, 19 4 L19 15" stroke="var(--volt)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M1 3 H21" stroke="var(--spike)" stroke-width="1.2" stroke-dasharray="3 3"/>
+    </svg>
+    <span>Study with me</span>
+  </a>
+  <div class="crumb" id="crumb"></div>
+  <div class="sp"></div>
+  <button class="icon-btn" id="theme" title="Switch theme" aria-label="Switch theme">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3.4" stroke="currentColor" stroke-width="1.4"/><path d="M8 .8v2M8 13.2v2M.8 8h2M13.2 8h2M2.9 2.9l1.4 1.4M11.7 11.7l1.4 1.4M13.1 2.9l-1.4 1.4M4.3 11.7l-1.4 1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+  </button>
+</div></header>
+
+<main id="app"></main>
+
+<script>
+/* ============================================================
+   CONTENT — add new subjects and units here.
+   ============================================================ */
+const SITE = {
+  title: "Study with me",
+  tagline: "Open study notes with live diagrams, quizzes and flashcards. Built while learning, shared as it goes.",
+  subjects: [{
+    id:"snn", title:"Spiking neural networks",
+    blurb:"Working through the maths behind event-driven networks, from the membrane equation to federated training.",
+    units:[{
+      id:"day2", n:"Day 2", title:"The CUBA LIF equations",
+      blurb:"How a spike becomes a current, a current becomes a voltage, and a voltage becomes the next spike.",
+      notes:[
+        {t:"h",v:"Three equations, and that's the whole neuron"},
+        {t:"p",v:"A spiking neuron looks complicated until you see that it runs the same three lines every timestep. Nothing else is needed to simulate it. Here they are in discrete time, which is what code actually runs."},
+        {t:"eq",v:"I[n+1] = α·I[n] + Σ W·S[n]\n<em>keep most of the old current, then add the weights of whoever just spiked</em>"},
+        {t:"eq",v:"U[n+1] = β·U[n] + I[n] − S[n]\n<em>keep most of the old voltage, add the current, and if you just fired, subtract 1</em>"},
+        {t:"eq",v:"S[n] = Θ(U[n] − ϑ)\n<em>fire if the voltage reached threshold</em>"},
+        {t:"p",v:"Throughout, the resting potential is 0, resistance is 1, and the threshold ϑ is 1. Those are normalisations, not physics — any other values can be absorbed by rescaling the weights."},
+
+        {t:"h",v:"Start with the voltage on its own"},
+        {t:"p",v:"Before any spiking, a leaky integrate-and-fire neuron is just a voltage being pulled in two directions. A leak drags it back toward rest. An input current pushes it away. Whichever is stronger at that moment decides which way it moves."},
+        {t:"eq",v:"τ_mem · dU/dt = −(U − U_rest) + R·I\n<em>the leak term grows as U climbs; the current term does not</em>"},
+        {t:"p",v:"That asymmetry is the interesting part. The current is fixed, but the leak gets stronger the further the voltage travels. Eventually they cancel and the voltage stops."},
+        {t:"widget",v:"lif"},
+        {t:"p",v:"Set the current low and the voltage flattens out below threshold and stays there forever. That is the leak winning. A perfect integrator would eventually fire on any positive input; this neuron will not. The grey line marks where it settles, which is exactly where the two terms are equal in size."},
+        {t:"p",v:"Push the current past 1.0 and the settling point moves above threshold, so the neuron fires before it can ever get there. Stronger input means a steeper climb and less time between spikes — that current-to-rate relationship is the spiking counterpart of an activation function."},
+        {t:"note",v:"<p><b>τ_mem is the neuron's memory span.</b> After one τ_mem the voltage has covered about 63% of the distance to wherever it is heading; after three, about 95%. Small τ_mem means a coincidence detector. Large τ_mem means an integrator.</p>"},
+
+        {t:"h",v:"Now the detour that makes it current-based"},
+        {t:"p",v:"Here is the thing most people get wrong on first reading. A spike does not touch the membrane voltage. It touches a current, and the current then charges the membrane. The weights W live in the current equation, not the voltage equation."},
+        {t:"eq",v:"spike  →  I  →  U  →  spike\n<em>two leaky stages in series, with two separate time constants</em>"},
+        {t:"p",v:"That detour is what \"current-based\" — CUBA — means, and it is the one sentence this whole topic is built around. Watch what it does to the shape of the signal:"},
+        {t:"widget",v:"cuba"},
+        {t:"p",v:"The input spikes are instant vertical lines. The current is jagged, jumping at each spike and decaying between them. The voltage is smoother still, with no sharp jumps at all. Each stage rounds off the signal once more."},
+        {t:"p",v:"Try τ_syn very small and each spike's charge vanishes before it can do anything. Try it large and charge from separate spikes piles up instead of decaying, so several weak inputs can add together and cross threshold. That is temporal summation, and it is why the second time constant earns its place."},
+        {t:"note",v:"<p><b>Plain LIF is the τ_syn → 0 limit of CUBA.</b> Current-based is not a different model. It is the same model with the assumption of instantaneous synapses relaxed. That is the cleanest way to state the relationship.</p>"},
+
+        {t:"h",v:"Why a spike produces a finite jump"},
+        {t:"p",v:"In continuous time a spike train is written as a sum of Dirac deltas, which have zero width and infinite height. It looks like that should blow up. It doesn't, because a delta is defined by its area, not its height — and area is what a rate equation integrates."},
+        {t:"p",v:"Think of a spike as a rectangular pulse of width ε and height h. During the pulse the current rises by roughly h·ε, which is the pulse's area. Now shrink ε toward zero while raising h to keep the area fixed at W. The pulse becomes infinitely tall and infinitely narrow, and the current still rises by exactly W. Only the sharpness changes."},
+        {t:"widget",v:"delta"},
+        {t:"p",v:"Formally: integrate the equation across a sliver of time around the spike. The decay term vanishes, because a finite quantity integrated over a shrinking window goes to zero. The delta term does not, because its area stays at 1 however narrow the window gets. What survives is a jump of exactly W."},
+        {t:"p",v:"Honestly, the discrete form makes this obvious without any of that. S[n] is just 0 or 1, so the sum is nothing more than \"add up the weights of whichever inputs fired.\" The delta notation is how you write that same idea when time is continuous."},
+
+        {t:"h",v:"The reset, and a discrepancy worth knowing"},
+        {t:"p",v:"The −S[n] term is the reset. If the neuron fired, subtract 1; otherwise subtract nothing. Note the subscript: this is the neuron's <strong>own</strong> output, not an input. Same symbol, different neuron, and an easy thing to blur when writing fast."},
+        {t:"p",v:"It is written as a subtraction rather than an assignment, which makes it a <strong>soft reset</strong>. If the voltage overshot to 1.08, subtraction leaves 0.08 behind; an assignment would discard it. Lava's CUBA implementation uses a hard reset instead, zeroing the voltage outright."},
+        {t:"widget",v:"reset"},
+        {t:"p",v:"At low input the two barely differ. Push the input higher and they separate, with different spike counts. So this is not a detail you can wave away if your paper says one thing and your code does the other."},
+
+        {t:"h",v:"Why this is secretly a recurrent network"},
+        {t:"p",v:"Look at what the state depends on. I[n+1] depends on I[n]. U[n+1] depends on U[n]. Every neuron carries state forward in time entirely on its own. That is the definition of a recurrent network, which means the whole thing unrolls in time and trains with backpropagation through time."},
+        {t:"p",v:"This holds even with no recurrent weights between neurons. There are two separate kinds of recurrence here: the explicit kind, where neurons in a layer talk to each other through a square weight matrix, and the implicit kind that lives inside each neuron's own state. Dropping the first does not remove the second."},
+        {t:"note",class:"warn",v:"<p><b>Where training breaks.</b> The spike function is a step, so its derivative is zero almost everywhere and undefined at the threshold. Backpropagation through it kills the gradient entirely. The fix is a surrogate gradient: substitute a smooth function's derivative in the backward pass only, leaving the forward pass a true binary spike.</p>"},
+
+        {t:"h",v:"One trap if you use Lava"},
+        {t:"p",v:"Lava's <code>current_decay</code> is the fraction that <strong>leaks away</strong>, not the fraction retained. The paper's α is the fraction retained. So they are opposites, and mixing them will make you state your time constants backwards."},
+        {t:"eq",v:"α = 1 − current_decay\nτ = −Δt / ln(1 − current_decay)"},
+        {t:"tbl",v:[["current_decay","retained (paper's α)","τ in units of Δt"],["0.10","0.90","≈ 9.5"],["0.25","0.75","≈ 3.5"],["0.50","0.50","≈ 1.4"],["1.00","0.00","0 — no memory at all"]]},
+        {t:"p",v:"That last row matters. Setting <code>current_decay = 1</code> removes the current stage entirely, which means you are running a plain LIF and not CUBA at all. Worth checking your config before claiming otherwise."}
+      ],
+      quiz:[
+        {q:"In I[n+1] = α·I[n] + Σ W·S[n], what does the sum actually compute at a given step?",
+         o:["The average firing rate of the layer below","The sum of the weights of only those inputs that fired at step n","The weighted sum of the membrane voltages below","The number of input neurons connected"],a:1,
+         h:"S[n] is either 0 or 1.",
+         e:"Since S[n] is 0 or 1, each term is either nothing or the full weight. The sum is a tally of the weights of whoever fired. Voltages from the layer below never enter — only their spikes do."},
+        {q:"In U[n+1] = β·U[n] + I[n] − S[n], whose spike is being subtracted?",
+         o:["The spikes of the layer below","The spikes of neighbouring neurons in the same layer","The neuron's own output spike","The spike of the readout layer"],a:2,
+         h:"What is this term physically doing to the neuron?",
+         e:"This is the reset. When a neuron fires, its own voltage drops back toward rest, so the subscript here is i, not j. Worth double-checking every time you write the equation out."},
+        {q:"A colleague says a spike from the layer below raises this neuron's voltage directly. In a CUBA model, is that right?",
+         o:["Yes, that is what the weight does","No — the spike raises the current first, which then charges the voltage","Yes, but only for positive weights","No — spikes only affect the threshold"],a:1,
+         h:"Which equation do the weights W appear in?",
+         e:"W appears in the current equation, not the voltage equation. The spike jumps I, and I feeds U on the next step. Two leaky stages in series. In a plain LIF the spike would indeed hit the voltage directly."},
+        {q:"You increase τ_mem. What happens to β, and what does that do to the neuron?",
+         o:["β shrinks; the neuron forgets faster","β grows; the neuron holds onto past input longer","β is unchanged; τ_mem only affects the threshold","β grows; the neuron fires less regardless of input"],a:1,
+         h:"A larger τ makes the exponent closer to zero.",
+         e:"A bigger τ_mem pushes the exponent toward 0, so β moves toward 1. Since β is the fraction retained each step, a β near 1 means very little leaks away — a long memory."},
+        {q:"Your Lava config has current_decay = 0.1. What is the paper's α?",
+         o:["0.1","0.9","10","exp(−0.1)"],a:1,
+         h:"Lava's decay is the fraction lost, not the fraction kept.",
+         e:"Lava's current_decay is what leaks away, so the retained fraction is 1 − 0.1 = 0.9. A small current_decay means a LONG memory, the opposite of what a small α would mean."},
+        {q:"Your network has no recurrent weights between neurons. Is it still a recurrent network?",
+         o:["No — without them it is purely feedforward","Yes — I and U carry state forward in time inside every neuron","Only if τ_mem is large enough","Only during training"],a:1,
+         h:"Look at what I[n] and U[n] depend on.",
+         e:"Two kinds of recurrence. The explicit kind between neurons is the V term. The implicit kind lives in each neuron's own state: I[n+1] depends on I[n], U[n+1] on U[n]. That persists regardless, so the network still unrolls in time and still needs BPTT."},
+        {q:"Why does S[n] = Θ(U[n] − ϑ) cause a problem for training?",
+         o:["It is too slow on a GPU","Its derivative is zero almost everywhere, so gradients cannot flow","It makes the network non-deterministic","It forces the voltage negative"],a:1,
+         h:"What is the slope of a step function?",
+         e:"A step is flat everywhere except at the threshold, where it is undefined. Flat means zero derivative, so backpropagation through it kills the gradient. The fix is a surrogate gradient in the backward pass only."}
+      ],
+      cards:[
+        {f:"The current update",b:"<span class='k'>I[n+1] = α·I[n] + Σ W·S[n]</span>Keep most of the old current, then add the weights of whoever just spiked."},
+        {f:"The voltage update",b:"<span class='k'>U[n+1] = β·U[n] + I[n] − S[n]</span>Keep most of the old voltage, add the current, and if you just fired, subtract 1."},
+        {f:"The spike condition",b:"<span class='k'>S[n] = Θ(U[n] − ϑ)</span>Fire if the voltage reached threshold. Θ outputs 1 when the inside is ≥ 0."},
+        {f:"What does α mean, and where does it come from?",b:"<span class='k'>α = exp(−Δt / τ_syn)</span>The fraction of synaptic current that survives one timestep. Always between 0 and 1. Bigger τ_syn gives bigger α, meaning a longer memory."},
+        {f:"What does β mean, and where does it come from?",b:"<span class='k'>β = exp(−Δt / τ_mem)</span>The fraction of membrane voltage that survives one timestep. τ_mem is the neuron's memory span."},
+        {f:"What does \"current-based\" (CUBA) actually mean?",b:"A spike does not touch the membrane voltage directly. It jumps a synaptic current, and the current then charges the membrane. Two leaky stages in series, with two separate time constants."},
+        {f:"Plain LIF versus CUBA in one sentence",b:"Plain LIF is the τ_syn → 0 limit of CUBA. Same model, with the instantaneous-synapse assumption relaxed."},
+        {f:"Where does the voltage settle under constant input?",b:"<span class='k'>U = U_rest + R·I</span>The point where the leak exactly cancels the drive. The neuron only ever fires if R·I exceeds the threshold."},
+        {f:"Why does a Dirac delta produce a finite jump?",b:"A delta is defined by its area, not its height. Integrating the equation across the spike, the decay term vanishes but the delta contributes its full area — a jump of exactly W."},
+        {f:"Is an SNN with no recurrent weights still an RNN?",b:"Yes. I[n+1] depends on I[n] and U[n+1] on U[n], so every neuron carries state forward in time on its own. Explicit recurrence between neurons is a separate thing."},
+        {f:"Where exactly does training break, and what fixes it?",b:"At the spike function. A step has zero derivative almost everywhere, so gradients cannot flow back through it. A surrogate gradient substitutes a smooth derivative in the backward pass only."},
+        {f:"Lava's decay convention",b:"<span class='k'>α = 1 − current_decay</span>Lava's value is the fraction that leaks AWAY, the paper's α is the fraction retained. A small current_decay means a long memory."},
+        {f:"Soft reset versus hard reset",b:"Soft subtracts the threshold, carrying any overshoot forward. Hard sets the voltage to zero, discarding it. The paper writes a soft reset; Lava's CUBA implements a hard one."}
+      ]
+    },{
+      id:"day3", n:"Day 3", title:"Surrogate gradients",
+      blurb:"The spike function has no usable derivative. Here is the substitution that lets these networks train anyway.",
+      notes:[
+        {t:"h",v:"The problem, stated plainly"},
+        {t:"p",v:"An SNN needs its spikes to be binary. That is the whole point — sparse, event-driven, 0 or 1. But a binary output comes from a step function, and a step function has no derivative worth using."},
+        {t:"p",v:"Two things go wrong at once. Away from the threshold the step is perfectly flat, so its slope is <strong>zero</strong>. At the threshold it jumps, so its slope is <strong>undefined</strong> — formally a Dirac delta, infinitely tall."},
+        {t:"eq",v:"S = Θ(U − ϑ)     →     Θ′ = 0  almost everywhere\n<em>and a product with one zero factor in it is zero</em>"},
+        {t:"p",v:"That second line is the fatal part. Backpropagation multiplies derivatives along a chain. A single zero anywhere in that product wipes out everything, so no weight anywhere in the network receives a gradient. The model cannot learn at all."},
+
+        {t:"h",v:"The trick: let the two passes disagree"},
+        {t:"p",v:"Here is the move. The forward pass and the backward pass do not have to use the same function. Nothing enforces consistency between them — autograd simply looks up whatever derivative you registered for an operation."},
+        {t:"p",v:"So the forward pass keeps its hard step, producing real binary spikes. The backward pass pretends the step was smooth and uses that pretend function's derivative instead. The network trains as if it were continuous while behaving as if it were discrete."},
+        {t:"widget",v:"surro"},
+        {t:"p",v:"The top curve never moves. That is the forward pass, unchanged no matter what happens below. The bumps underneath are candidates for the backward pass. Drag the width and watch them all collapse toward an infinitely narrow spike — that narrow limit is the true derivative, and it is exactly what you are trying to avoid."},
+        {t:"p",v:"What matters is what the shapes have in common, not how they differ. Each is centred at the threshold, largest there, and fades away on both sides. The message to the network is identical in every case: <strong>a neuron that nearly fired, or nearly did not, is the one whose weights are worth adjusting.</strong> A neuron sitting far from threshold gets almost nothing, because nudging its weights would not have changed its output anyway."},
+        {t:"note",v:"<p><b>Width matters more than shape.</b> This is one of the paper's main empirical claims, and it is a little surprising. Rectangular, sigmoid-derivative and arctan all work about as well. How wide the window is turns out to matter considerably more than which curve you picked.</p>"},
+
+        {t:"h",v:"The substitution, in the chain rule"},
+        {t:"p",v:"Write out backpropagation for a single weight and the fix becomes almost anticlimactic. The gradient travels from the loss, through the spike, through the voltage, through the current, and finally into the weight:"},
+        {t:"eq",v:"∂L/∂W  =  ∂L/∂S · ∂S/∂U · ∂U/∂I · ∂I/∂W\n<em>every factor is an ordinary derivative — except the second</em>"},
+        {t:"p",v:"Three of those four factors are derivatives of plain linear operations, and they behave themselves. The offender is ∂S/∂U, which is Θ′ and equals zero. So one factor gets swapped:"},
+        {t:"eq",v:"∂S/∂U  =  Θ′(U − ϑ)   →   σ′(U − ϑ)"},
+        {t:"p",v:"<strong>Nothing else in the chain changes.</strong> That is the sentence to be able to say without looking. BPTT itself is untouched. The unrolled graph is untouched. The loss is untouched. One factor gets a stand-in and everything else runs as normal."},
+
+        {t:"h",v:"The second approximation, which is easy to miss"},
+        {t:"p",v:"Most people remember the surrogate and forget this one. The reset term also depends on the spike, so it too carries a Θ′ and contributes to the gradient. In practice that path is usually <strong>dropped entirely</strong> from the backward pass."},
+        {t:"p",v:"The justification is that reset is a correction rather than the main signal path, and including it tends to destabilise training more than it helps. But it is an approximation, and it is worth naming as one rather than pretending the derivation is exact."},
+        {t:"note",class:"warn",v:"<p><b>Two approximations, not one.</b> Surrogate for Θ′, and the reset path dropped. If you are asked how the gradient gets through the spike, both belong in the answer.</p>"},
+
+        {t:"h",v:"Credit across time"},
+        {t:"p",v:"Because the network is unrolled in time, the gradient does not only travel down through layers. It also travels <strong>backwards through timesteps</strong>. A spike at step 3 changed the voltage at step 4, which changed whether a spike happened at step 5, which affected the loss."},
+        {t:"p",v:"SLAYER calls this <strong>error reassignment in time</strong>. An error measured at the end of a sequence gets distributed back to the earlier spikes that caused it, spread according to the spike response kernel rather than assigned to one instant."},
+        {t:"p",v:"This is also why the loss is summed over the whole sequence rather than read off a single step:"},
+        {t:"eq",v:"L = Σ_t  ℓ(s_t, y)\n<em>every timestep contributes, so every timestep receives gradient</em>"},
+
+        {t:"h",v:"What this means for a real implementation"},
+        {t:"p",v:"SLAYER does not use any of the three shapes from the paper's figure. It uses a <strong>decaying exponential</strong> — same family, a bump centred on threshold, but with a sharp peak instead of a rounded one."},
+        {t:"eq",v:"σ′(U) = (scale_grad / 2ρ) · exp(−|U − ϑ| / ρ)\nρ = tau_grad × ϑ"},
+        {t:"p",v:"<code>tau_grad</code> is the width slider from the diagram above. It decides how far from threshold a neuron can sit and still receive gradient, and the default is 1."},
+        {t:"tbl",v:[["|U − ϑ|","tau_grad = 0.001","tau_grad = 1"],["0.001","184","0.50"],["0.005","3.4","0.50"],["0.01","0.023","0.50"],["0.05","0.0000000000000000001","0.48"]]},
+        {t:"p",v:"At 0.001 only neurons within roughly ±0.005 of threshold learn anything at all, while the few sitting exactly at threshold receive gradients in the hundreds. Near-nothing for most and enormous for a handful is a recipe for training that stalls or blows up. Worth checking in your own config before assuming it is fine."},
+        {t:"note",v:"<p><b>The one-line takeaway.</b> The surrogate gradient decides which neurons receive credit. Too narrow and almost none of them do.</p>"},
+
+        {t:"h",v:"Eqs. (10)–(12): the chain rule, written out step by step"},
+        {t:"p",v:"Neftci's page 18 does the same thing forward in time, for one weight W_ij. Differentiate each LIF line and read them bottom-up: (12) feeds (11), (11) feeds (10)."},
+        {t:"eq",v:"(12)  ∂I[n+1]/∂W = α·∂I[n]/∂W + S_j[n]\n<em>current sensitivity: decayed old value plus the input spike</em>"},
+        {t:"eq",v:"(11)  ∂U[n+1]/∂W = β·∂U[n]/∂W + ∂I[n]/∂W − ∂S[n]/∂W\n<em>voltage sensitivity: decayed old value plus current sensitivity minus the reset</em>"},
+        {t:"eq",v:"(10)  ∂S[n+1]/∂W = Θ′(U[n+1] − ϑ) · ∂U[n+1]/∂W\n<em>through the spike: this is where Θ′ appears</em>"},
+        {t:"p",v:"Apply the same two approximations: Θ′ becomes σ′, and the reset term −∂S/∂W is dropped. What is left is striking: ∂U/∂W is just the input spike train filtered twice, first by α and then by β. A PSP-shaped trace that depends only on presynaptic activity."},
+        {t:"eq",v:"∂U/∂W ≈ ε * S_j\n<em>W drops out because the current is linear in W</em>"},
+        {t:"tbl",v:[["n","S_j[n]","∂I/∂W","∂U/∂W"],["0","1","0","0"],["1","0","1","0"],["2","0","0.5","1"],["3","0","0.25","1.3"]]},
+        {t:"p",v:"That table uses α = 0.5, β = 0.8 and one input spike at n = 0. Notice the one-step delay at each stage: the spike reaches the current at n = 1 and the voltage at n = 2."},
+        {t:"note",v:"<p><b>Why no ∂S_j/∂W term in (12)?</b> S_j is input data, so it cannot depend on W. Not because it is binary. In a deeper or recurrent net that term would appear and things become non-local.</p>"},
+        {t:"note",class:"warn",v:"<p><b>σ′ gates the trace.</b> Eq. (10) is a product. A large trace times a tiny σ′ (voltage far from threshold) is still almost zero. No credit to neurons that were nowhere near firing.</p>"},
+
+        {t:"h",v:"SLAYER's backward rule, in one line"},
+        {t:"eq",v:"δ⁽ˡ⁾(t) = ρ(t) · ( ε ⊙ (Wᵀ δ⁽ˡ⁺¹⁾) )(t)\n<em>Wᵀ: back across layers.  ε ⊙: back in time.  ρ: only near threshold.</em>"},
+        {t:"p",v:"Spikes just before an error get the most blame, older ones less, and later ones none, because the future cannot cause the past. It is BPTT in spirit, so memory grows with T."},
+
+        {t:"h",v:"How a count loss still has a gradient"},
+        {t:"p",v:"For classification the loss compares spike counts: the true class should fire a lot, the others little. A count is an integer, but the count itself is never differentiated. The error (count − target) is spread evenly over all T steps. At each step it passes through the smooth surrogate, which keeps the near-threshold moments, near-misses included. Then the kernel sends it back to the input spikes that caused them."},
+        {t:"eq",v:"too many spikes  →  weights go down\ntoo few spikes   →  weights go up"},
+
+        {t:"h",v:"My model, mapped"},
+        {t:"tbl",v:[["code","meaning"],["slayer.block.cuba","CUBA-LIF neurons"],["current_decay 0.3","α ≈ 0.7"],["voltage_decay 0.25","β ≈ 0.75"],["threshold 1","ϑ = 1"],["tau_grad 1","width of SLAYER's exponential surrogate"],["requires_grad True","decays are learned, and federated-averaged"],["delay False","SLAYER's learnable delays are off"]]}
+      ],
+      quiz:[
+        {q:"Why is Θ′ zero almost everywhere?",
+         o:["Because the threshold is set to 1","Because a step function is perfectly flat on both sides of the jump","Because spikes are sparse in time","Because the voltage decays between spikes"],a:1,
+         h:"Picture the shape of a step and ask what its slope is.",
+         e:"A step is horizontal everywhere except at the single point where it jumps. A horizontal line has slope zero, so the derivative is zero on both sides."},
+        {q:"Why is a zero derivative fatal rather than merely inconvenient?",
+         o:["It makes the forward pass slower","Backpropagation multiplies derivatives, so one zero factor zeroes the whole chain","It forces the voltage to go negative","It makes the loss undefined"],a:1,
+         h:"What operation does the chain rule perform on the factors?",
+         e:"The chain rule is a product. A single zero anywhere in that product makes the result zero, so no weight in the network receives any gradient and nothing learns."},
+        {q:"In the surrogate gradient method, what happens to the forward pass?",
+         o:["It uses a smooth sigmoid instead of a step","It is unchanged — still a hard binary spike","It is skipped during training","It uses the surrogate only on the first epoch"],a:1,
+         h:"What would you lose if the forward pass stopped being binary?",
+         e:"Only the backward pass is substituted. The forward pass keeps its hard step, because binary spikes are what give an SNN its sparsity and event-driven efficiency. Smooth it and you have a rate network with extra steps."},
+        {q:"What do rectangular, sigmoid-derivative and arctan surrogates have in common?",
+         o:["They are all exactly equal to Θ′","They are bumps centred at the threshold, largest there and decaying away","They all require a learnable width","They all output binary values"],a:1,
+         h:"Think about where each one is biggest.",
+         e:"All three say the same thing: neurons near threshold are the ones worth adjusting, because they are the ones whose output a small weight change could have flipped. The paper finds the exact shape matters much less than the width."},
+        {q:"Which single factor in the BPTT chain rule gets replaced?",
+         o:["∂L/∂S","∂S/∂U","∂U/∂I","∂I/∂W"],a:1,
+         h:"Which factor involves the spike function?",
+         e:"Only ∂S/∂U, the derivative of the spike with respect to the voltage. The other three are derivatives of linear operations and behave normally. BPTT, the unrolled graph and the loss are all untouched."},
+        {q:"Besides the surrogate, what second approximation is usually made?",
+         o:["The leak term is set to zero","The reset path is dropped from the backward pass","The threshold is made learnable","The loss is computed only at the last timestep"],a:1,
+         h:"What else in the equations depends on the spike?",
+         e:"The reset also depends on S, so it carries a Θ′ too. That path is normally dropped, on the grounds that it is a correction rather than the main signal and tends to destabilise training. It is an approximation, and worth naming as one."},
+        {q:"What does SLAYER mean by \"error reassignment in time\"?",
+         o:["Rescaling the loss by the number of timesteps","Distributing an error back to the earlier spikes that caused it","Shifting spikes forward to align with labels","Resetting the gradient at each timestep"],a:1,
+         h:"The network is unrolled in time — where else can gradient flow?",
+         e:"Gradient flows backwards through timesteps as well as down through layers. An error at the end of a sequence is assigned back to earlier spikes that contributed to it, spread by the spike response kernel rather than pinned to one instant."},
+        {q:"Your tau_grad was 0.001 and you changed it to 1. What did that change?",
+         o:["The firing threshold moved","The learning window widened by a factor of about a thousand","The membrane time constant grew","The network became feedforward"],a:1,
+         h:"tau_grad sets ρ, which is the width of the surrogate.",
+         e:"ρ = tau_grad × ϑ is the width of the exponential surrogate. At 0.001 only neurons within about ±0.005 of threshold received any gradient. At 1, essentially all of them do."},
+        {q:"Why is there no ∂S_j/∂W term in Eq. (12)?",
+         o:["Because S_j is binary","Because α cancels it","Because it is dropped as an approximation","Because S_j is input data and does not depend on W"],a:3,
+         h:"Where do the input spikes come from in a two-layer net?",
+         e:"S_j is the input layer, fixed by the data. Changing W_ij cannot change it. Being 0/1 is not the reason."},
+        {q:"With the reset dropped, ∂U/∂W depends only on…",
+         o:["Input j's spikes, filtered twice (ε * S_j)","The weight W itself","The target spike train","Neuron i's own output spikes"],a:0,
+         h:"Is the current linear in W?",
+         e:"The current is W times a presynaptic trace, so its derivative drops W. Filtering by α then β gives a PSP-shaped trace of input j's spikes."},
+        {q:"A neuron's voltage trace is large but its voltage was far below threshold. What is ∂S/∂W with the surrogate?",
+         o:["Large, because the trace is large","Exactly equal to the trace","Close to 0, because σ′ is tiny there","Undefined"],a:2,
+         h:"Eq. (10) is a product.",
+         e:"σ′ gates the trace. Far from threshold σ′ ≈ 0, so the product is ≈ 0 no matter how big the trace is."},
+        {q:"In SLAYER, an error happens at t = 26. Input spikes are at 20, 22 and 33. Which gets zero blame?",
+         o:["t = 20","t = 33","t = 22","None, all share equally"],a:1,
+         h:"Can the future cause the past?",
+         e:"The kernel is zero for negative time. A spike after the error could not have caused it, so it gets no blame."},
+        {q:"A count loss says 9 spikes, target 6. What does the gradient do, and why does it exist?",
+         o:["Nothing, counts are integers so there is no gradient","Weights go up, because the error is positive","Weights go down; the error flows through the smooth surrogate at every step","Only the last time step is updated"],a:2,
+         h:"The count isn't differentiated directly.",
+         e:"The error is spread over all steps and passes through the surrogate, which is smooth. Too many spikes means the weights are pushed down."}
+      ],
+      cards:[
+        {f:"Why is Θ′ zero almost everywhere?",b:"A step function is perfectly flat on both sides of its jump, and a flat line has slope zero."},
+        {f:"Why is Θ′ undefined at the threshold?",b:"The function jumps instantaneously, so there is no finite slope there. Formally the derivative is a Dirac delta — infinitely tall, zero width."},
+        {f:"Why does a zero derivative stop all learning?",b:"The chain rule multiplies derivatives together. One zero factor makes the entire product zero, so no weight anywhere in the network receives a gradient."},
+        {f:"What is the surrogate gradient trick, in one sentence?",b:"Keep the hard binary step in the forward pass, but substitute a smooth function's derivative in the backward pass. Nothing requires the two passes to agree."},
+        {f:"Why not just use a smooth function in the forward pass too?",b:"You would lose binary spikes, and with them the sparsity and event-driven efficiency that justify using an SNN at all. That is a rate network with extra steps."},
+        {f:"Name three surrogate shapes from the paper",b:"Rectangular, the derivative of a sigmoid, and the derivative of an arctan. SLAYER uses a fourth: a decaying exponential."},
+        {f:"What do all surrogate shapes have in common?",b:"Each is a bump centred at the threshold, largest there and decaying away on both sides. They all say: neurons near threshold are the ones worth adjusting."},
+        {f:"Shape or width — which matters more?",b:"Width. The paper's empirical finding is that the specific curve matters much less than how wide the learning window is."},
+        {f:"Write the BPTT chain for one weight",b:"<span class='k'>∂L/∂W = ∂L/∂S · ∂S/∂U · ∂U/∂I · ∂I/∂W</span>Three factors are ordinary derivatives of linear operations. Only ∂S/∂U is the problem."},
+        {f:"Which single factor gets substituted?",b:"<span class='k'>∂S/∂U : Θ′ → σ′</span>Nothing else changes. BPTT, the unrolled graph and the loss are all untouched."},
+        {f:"What are the TWO approximations?",b:"First, Θ′ is replaced by a surrogate σ′. Second, the reset path is dropped from the backward pass. Most people remember the first and forget the second."},
+        {f:"Why is the reset path dropped?",b:"It is a correction rather than the main signal path, and including it tends to destabilise training. It is an approximation, not an exact derivation."},
+        {f:"What is \"error reassignment in time\"?",b:"Distributing an error measured late in a sequence back to the earlier spikes that caused it, spread by the spike response kernel rather than pinned to one instant."},
+        {f:"How does the loss aggregate over time?",b:"<span class='k'>L = Σ_t ℓ(s_t, y)</span>Every timestep contributes to the loss, so every timestep receives gradient."},
+        {f:"SLAYER's surrogate function",b:"<span class='k'>σ′(U) = (scale_grad / 2ρ) · exp(−|U − ϑ| / ρ)</span>with ρ = tau_grad × ϑ. A sharp-peaked exponential rather than a rounded bump."},
+        {f:"What does tau_grad control, and what is its default?",b:"The width of the learning window around the threshold. Default is 1. At 0.001 only neurons within about ±0.005 of threshold receive any gradient at all."},
+        {f:"The one-line takeaway for Day 3",b:"The surrogate gradient decides which neurons receive credit. Too narrow and almost none of them do."},
+        {f:"Eqs. (10)–(12)",b:"<span class='k'>∂I[n+1] = α∂I[n] + S_j[n]<br>∂U[n+1] = β∂U[n] + ∂I[n] − ∂S[n]<br>∂S[n+1] = Θ′·∂U[n+1]</span>Replace Θ′ with σ′, and drop the reset term."},
+        {f:"With the reset dropped, what does ∂U/∂W depend on?",b:"<span class='k'>∂U/∂W ≈ ε * S_j</span>Only input j's spikes, filtered by α then β. W drops out because the current is linear in W."},
+        {f:"What does σ′ do in Eq. (10)?",b:"It gates the trace. Far from threshold σ′ ≈ 0, so the gradient is ≈ 0 even if the trace is large."},
+        {f:"How can a count loss train an SNN?",b:"The error (count − target) is spread over all T steps, passes through the smooth surrogate (near-threshold moments, near-misses too), then the kernel sends it back to the causing inputs."},
+        {f:"SuperSpike versus SLAYER",b:"SuperSpike: forward traces in time, random feedback across layers, local and online. SLAYER: errors backward in time, exact backprop across layers, memory grows with T."},
+        {f:"30-second answer: why does this work if it's non-differentiable?",b:"The forward pass stays truly spiking. In the backward pass we swap Θ′ for a smooth function peaked at threshold, giving credit to neurons that were close to firing. It's a biased but useful gradient, and many shapes work."}
+      ]
+    },{
+      id:"day4", n:"Day 4", title:"Event data and the SNN architecture",
+      blurb:"From camera events to a binary tensor, then layer by layer through Figure 1 with shapes, parameters and bytes.",
+      notes:[
+        {t:"h",v:"What an event camera records"},
+        {t:"p",v:"A normal camera takes whole pictures. A DVS camera does not. Each pixel works on its own and reports only when its brightness changes. Each report is one event."},
+        {t:"eq",v:"event = (x, y, t, p)\n<em>pixel position, time in microseconds, polarity ON (brighter) or OFF (darker)</em>"},
+        {t:"p",v:"Nothing moving means no events. The data is sparse and already spike-like, which is why it pairs so naturally with SNNs."},
+        {t:"h",v:"CIFAR10-DVS"},
+        {t:"p",v:"Li et al. 2017 showed CIFAR-10 images on a monitor, moved them, and recorded them with a DVS camera. The motion creates the brightness changes. <strong>10 classes, 10,000 samples, 128 × 128 pixels, 2 polarities.</strong>"},
+        {t:"h",v:"From events to a tensor: time bins"},
+        {t:"p",v:"Cut each recording into T equal slices of time. Each slice is a <strong>time bin</strong>. All events inside one bin are squashed into one frame, and one frame is one time step for the SNN."},
+        {t:"eq",v:"x[p, y, x, t] = 1  if ≥ 1 event at that pixel,\n                   polarity and bin\n              = 0  otherwise\n<em>bitwise-OR binning, T = 16  →  tensor (2, 128, 128, 16)</em>"},
+        {t:"widget",v:"bin"},
+        {t:"p",v:"<strong>OR versus counting.</strong> Counting stores how many events landed; OR only stores whether any did. OR gives true binary spikes and caps noisy hot pixels at 1. The cost is losing the count. With short bins, collisions are rare, so OR and counting become almost the same."},
+        {t:"p",v:"<strong>Why T = 16.</strong> Small T means long bins: frames fill up and timing is lost. Large T keeps timing but BPTT memory grows linearly with T. Sixteen is the balance. It was not ablated, which belongs on the limitations list."},
+        {t:"h",v:"The synapse: one number per window"},
+        {t:"p",v:"A 5 × 5 window slides over the input with stride 4. At each position and time step it multiplies the input spikes by its weights and adds them up. Because the input is 0/1, that is just the sum of the weights where a spike happened."},
+        {t:"eq",v:"z[t] = w · x[t] = Σ over 5 × 5 × 2 = 50 inputs\n<em>the same weights at every time step and every position</em>"},
+        {t:"p",v:"Each conv layer has several <strong>weight sets</strong> (filters). SpkConv(2, 8) has 8: each set looks at the same patch and responds to a different pattern, giving 8 numbers per position. They start random and specialise through training."},
+        {t:"h",v:"The neuron: z becomes spikes"},
+        {t:"eq",v:"current[t] = 0.7 · current[t−1] + z[t]\nvoltage[t] = 0.75 · voltage[t−1] + current[t]\nspike if voltage ≥ 1, then voltage → 0\n<em>Lava's CUBA, with my decays; note the hard reset</em>"},
+        {t:"h",v:"Figure 1, layer by layer"},
+        {t:"eq",v:"out = ⌊(in + 2p − k) / s⌋ + 1      k = 5, s = 4, p = 1\n128 → 32 → 8 → 2"},
+        {t:"tbl",v:[["layer","output","weights","with extras"],["Input","2 × 128 × 128","0","0"],["SpkConv1 (2 → 8)","8 × 32 × 32","8·2·5·5 = 400","410"],["SpkConv2 (8 → 32)","32 × 8 × 8","32·8·5·5 = 6,400","6,434"],["SpkConv3 (32 → 64)","64 × 2 × 2","64·32·5·5 = 51,200","51,266"],["Flatten","256","0","0"],["SpkDense1","2056","256·2056 = 526,336","528,394"],["SpkDense2","10","2056·10 = 20,560","20,572"],["Total","","","≈ 607,076"]]},
+        {t:"note",v:"<p><b>Extras</b> = one weight-norm scale per output channel plus two learnable decays per layer. Confirm the exact total with <code>SNN(10).params()</code>. SpkDense1 alone holds about 87% of the model, so it dominates communication.</p>"},
+        {t:"p",v:"<strong>Why stride 4:</strong> only three conv layers to go from 128 to 2, so a short gradient path through surrogates, fewer dead neurons, and a smaller model. <strong>The cost:</strong> windows barely overlap, so fine spatial detail is lost. Decoding is the class neuron with the most spikes over T."},
+        {t:"h",v:"Bytes, memory and compute"},
+        {t:"eq",v:"model size M = P × b     (b = 4, 2 or 1 bytes)\nupload per round = M × K\nup + down per round = M × K × 2\nwhole training = M × K × 2 × R"},
+        {t:"widget",v:"comm"},
+        {t:"eq",v:"activation memory ≈ neurons × T × 4 states × 4 B × B\n12,562 neurons → ≈ 3.2 MB per sample, ≈ 412 MB at B = 128\n<em>linear in T: this is why BPTT is memory-bound</em>"},
+        {t:"eq",v:"MACs per step = Σ C_out·H_out·W_out·C_in·k²  +  Σ N_in·N_out ≈ 1.57 M\nper sample ≈ 1.57 M × 16 ≈ 25 M\n<em>on neuromorphic hardware: synaptic ops ≈ MACs × spike rate</em>"},
+        {t:"eq",v:"samples per client N_k = N_train / K\nlocal steps per round = ⌈N_k / B⌉ × E"}
+      ],
+      quiz:[
+        {q:"What does one time bin become in the input tensor?",
+         o:["One event","One pixel","One frame, which is one time step","The whole recording"],a:2,
+         h:"The last dimension of (2, 128, 128, 16).",
+         e:"All events in that slice are squashed into one frame. Sixteen bins give sixteen time steps."},
+        {q:"A pixel gets 4 ON events inside the same bin. What value does OR binning give it?",
+         o:["1","4","0.25","0"],a:0,
+         h:"OR asks only whether anything happened.",
+         e:"Any count of one or more becomes 1. That is the information OR discards."},
+        {q:"When is the information lost by OR binning smallest?",
+         o:["When T is small","It is the same for any T","When the image does not move","When T is large, so bins are short"],a:3,
+         h:"How often do two events share a short bin?",
+         e:"Short bins rarely hold two events at the same pixel, so OR and counting become nearly identical."},
+        {q:"Why not just use T = 64?",
+         o:["BPTT memory and compute grow with T","OR binning stops working","The camera only records 16 frames","Accuracy always drops"],a:0,
+         h:"What must backprop through time store?",
+         e:"Every neuron's state at every step is kept for the backward pass, so memory grows linearly with T."},
+        {q:"What is the output shape of SpkConv2?",
+         o:["8 × 32 × 32","32 × 8 × 8","64 × 2 × 2","32 × 32 × 8"],a:1,
+         h:"Channels are the second number in SpkConv(in, out); size divides by 4.",
+         e:"SpkConv(8, 32) has 32 weight sets, and 32 pixels shrink to 8. So 32 × 8 × 8. 8 × 32 × 32 is SpkConv1."},
+        {q:"Which layer holds most of the parameters?",
+         o:["SpkConv3","SpkDense2","SpkConv1","SpkDense1"],a:3,
+         h:"256 × 2056.",
+         e:"SpkDense1 has 526,336 weights, about 87% of the model. It dominates communication cost."},
+        {q:"The model is ≈ 2.43 MB. With K = 4, what is the total UPLOAD to the server in one round?",
+         o:["≈ 2.4 MB","≈ 19.4 MB","≈ 9.7 MB","≈ 4.8 MB"],a:2,
+         h:"One model per client, one direction.",
+         e:"2.43 × 4 ≈ 9.7 MB. Up plus down would double it to ≈ 19.4 MB."},
+        {q:"Compute z. Weights row by row: [0.5, −0.2, 0.1 | 0, 0.3, 0.4 | −0.1, 0.2, 0.6]. Input: [0, 1, 0 | 1, 1, 0 | 0, 0, 1].",
+         o:["1.0","0.9","0.7","1.3"],a:2,
+         h:"Add only the weights where the input is 1.",
+         e:"−0.2 + 0 + 0.3 + 0.6 = 0.7."}
+      ],
+      cards:[
+        {f:"What is an event?",b:"<span class='k'>(x, y, t, p)</span>A single pixel reporting a brightness change at time t. Polarity ON = brighter, OFF = darker."},
+        {f:"CIFAR10-DVS in one line",b:"CIFAR-10 images moved on a monitor and recorded with a DVS camera. 10 classes, 10,000 samples, 128 × 128, 2 polarities."},
+        {f:"What is a time bin?",b:"One equal slice of the recording. All its events are squashed into one frame, which is one time step for the SNN."},
+        {f:"OR binning versus counting",b:"OR: 1 if any event, else 0. True spikes, robust to hot pixels, loses counts. Counting keeps the number but isn't a spike and needs normalising."},
+        {f:"Why T = 16?",b:"Enough temporal detail while keeping BPTT memory, which grows linearly with T, affordable. Not ablated: a stated limitation."},
+        {f:"Conv output size formula",b:"<span class='k'>⌊(in + 2p − k) / s⌋ + 1</span>With k = 5, s = 4, p = 1: 128 → 32 → 8 → 2."},
+        {f:"Figure 1 shapes",b:"<span class='k'>2×128×128 → 8×32×32 → 32×8×8 → 64×2×2 → 256 → 2056 → 10</span>Channels up, picture down."},
+        {f:"What is a weight set?",b:"One filter of size k × k × C_in. SpkConv(2, 8) has 8 of them, each responding to a different pattern. The count is a design choice."},
+        {f:"Total parameters and bytes",b:"<span class='k'>≈ 607,076 × 4 B ≈ 2.43 MB</span>Upload per round = M × K; up + down = × 2. SpkDense1 ≈ 87% of it."},
+        {f:"Why stride 4, and what does it cost?",b:"Only three conv layers, a short gradient path, fewer dead neurons, a small model. Cost: little window overlap, so fine spatial detail is lost."}
+      ]
+    },{
+      id:"day5", n:"Day 5", title:"FedAvg from first principles",
+      blurb:"McMahan et al. 2017: the federated objective, FedSGD versus FedAvg, Algorithm 1, and what K, C, E, B and η each do.",
+      notes:[
+        {t:"h",v:"The paper"},
+        {t:"p",v:"<strong>McMahan, Moore, Ramage, Hampson and Agüera y Arcas, \"Communication-Efficient Learning of Deep Networks from Decentralized Data\", AISTATS 2017.</strong> It introduced FederatedAveraging. Reference [14] in my paper. Free on arXiv as 1602.05629."},
+        {t:"h",v:"Why federated learning at all"},
+        {t:"p",v:"Phones hold rich, private data. Instead of uploading it, each client trains locally and sends only an <strong>update to the current global model</strong>. The server combines the updates. Raw data never leaves the device."},
+        {t:"p",v:"Federated optimization differs from data-centre training in four ways: data is <strong>non-IID</strong>, <strong>unbalanced</strong>, <strong>massively distributed</strong>, and <strong>communication is limited</strong>. On a phone, computation is almost free but upload bandwidth is 1 MB/s or less. So the goal is to spend more computation to need fewer rounds."},
+        {t:"note",class:"warn",v:"<p><b>Is it private?</b> FL keeps raw data local and sends minimal, ephemeral updates that cannot contain more information than the data. It does <b>not</b> guarantee privacy, and updates can still leak information. My paper makes no formal privacy claim.</p>"},
+        {t:"h",v:"The objective: a weighted sum of client losses"},
+        {t:"eq",v:"f(w) = (1/n) Σᵢ fᵢ(w)\n<em>ordinary training: the average loss over all n examples</em>"},
+        {t:"eq",v:"f(w) = Σₖ (nₖ / n) · Fₖ(w),     Fₖ(w) = (1/nₖ) Σ_{i ∈ 𝒫ₖ} fᵢ(w)\n<em>the same number, computed client by client</em>"},
+        {t:"p",v:"Average within each client first, then combine clients weighted by their share of the data. The weights make every <strong>example</strong> count equally, not every client."},
+        {t:"tbl",v:[["client","examples","losses","Fₖ","nₖ/n"],["A","2","1, 3","2","0.2"],["B","3","2, 2, 5","3","0.3"],["C","5","1, 1, 1, 1, 6","2","0.5"]]},
+        {t:"p",v:"All ten examples together: 23 / 10 = 2.3. Weighted by client: 0.2·2 + 0.3·3 + 0.5·2 = 2.3. A plain average of the clients would give 2.33, which is wrong."},
+        {t:"p",v:"<strong>IID</strong> means 𝔼[Fₖ(w)] = f(w): with a random split, each client's loss is on average the global loss. <strong>Non-IID</strong> means Fₖ can be an arbitrarily bad approximation of f. With my equal IID shards, nₖ/n = 1/K for every client, so the weighted average becomes a plain average."},
+        {t:"h",v:"From FedSGD to FedAvg"},
+        {t:"p",v:"<strong>FedSGD:</strong> each selected client computes one gradient on all its local data, gₖ = ∇Fₖ(wₜ). The server takes one step with the weighted sum:"},
+        {t:"eq",v:"wₜ₊₁ = wₜ − η Σₖ (nₖ/n) gₖ"},
+        {t:"p",v:"The key rewrite: the same update can be done as each client stepping itself, wᵏ = wₜ − η gₖ, and the server <strong>averaging the models</strong>. Once written that way, a client can take many steps before averaging. That is <strong>FedAvg</strong>."},
+        {t:"eq",v:"wₜ₊₁ = Σₖ (nₖ/n) · wₜ₊₁ᵏ\n<em>average the weights, not the gradients</em>"},
+        {t:"tbl",v:[["knob","meaning","my paper"],["K","total clients","2, 4, 8"],["C","fraction of clients per round","1 (all)"],["E","local epochs per round","2, 4, 8"],["B","local batch size (∞ = whole local set)","32, 64, 128"],["η","learning rate","0.001"]]},
+        {t:"eq",v:"uₖ = E · nₖ / B        local updates per round\nFedSGD = FedAvg with E = 1, B = ∞  (one step per round)"},
+        {t:"h",v:"Algorithm 1 in plain words"},
+        {t:"eq",v:"Server:  initialise w₀\n         each round t:  m = max(C·K, 1);  pick Sₜ (m random clients)\n                        every k in Sₜ in parallel:  wₜ₊₁ᵏ = ClientUpdate(k, wₜ)\n                        wₜ₊₁ = Σₖ (nₖ/n) wₜ₊₁ᵏ\nClient:  split 𝒫ₖ into batches of size B\n         for E epochs, for each batch b:  w ← w − η ∇ℓ(w; b)\n         return w"},
+        {t:"h",v:"Why averaging models does not break (their Figure 1)"},
+        {t:"p",v:"Two MNIST models trained on different data were mixed as θw + (1 − θ)w′. With <strong>different</strong> random initialisations, the average is a loss spike. With the <strong>same</strong> initialisation, ½w + ½w′ has lower loss than either parent. FedAvg is safe because every client starts each round from the same wₜ."},
+        {t:"h",v:"Why averaging K models is not K times the steps"},
+        {t:"p",v:"Clients step in parallel from the same start, each on its own data, and their models are averaged. One model taking K times the steps would take them one after another, each building on the last. A one-number example: two clients pull toward 2 and 4, η = 0.5, two local steps each, start at 0."},
+        {t:"tbl",v:[["approach","total steps","result after one round"],["FedAvg (2 clients × 2 steps)","4","2.25"],["one model, 4 steps in a row","4","2.8125"]]},
+        {t:"p",v:"FedAvg's round equals two sequential steps, not four. Averaging gives about one client's path, which is why more clients (less data each, fewer steps) means less progress per round, and more local epochs helps."},
+        {t:"widget",v:"fedavg"},
+        {t:"h",v:"Their E and B experiments (Table 2, Figure 2)"},
+        {t:"p",v:"With C = 0.1, adding local computation cut communication dramatically. MNIST CNN, IID, target 99%: FedSGD needed <strong>626 rounds</strong>; E = 20, B = 10 needed <strong>18 (about 35×)</strong>. Shakespeare LSTM, non-IID: up to <strong>95×</strong>. Lower B first: it is nearly free on parallel hardware."},
+        {t:"p",v:"Caveats: gains are smaller for pathological non-IID MNIST (2.8–3.7×), and one setting (non-IID, E = 5, B = ∞) needed 1000 rounds, <strong>slower</strong> than FedSGD's 483. Very large E can plateau or diverge (their Figure 3), so reduce local work late in training."},
+        {t:"h",v:"How my results compare"},
+        {t:"tbl",v:[["effect","McMahan","my paper (rounds to 70%)"],["more local epochs E","fewer rounds","E 2 → 8: 17 → 6 (K = 2), 29 → 11 (K = 4)"],["batch size B","smaller B faster","larger B faster: 11 → 7 → 6 for B = 32, 64, 128"]]},
+        {t:"p",v:"A plausible reason for the B difference: I used a fixed η = 0.001 with surrogate-gradient SNNs, so larger batches mean less gradient noise. McMahan tuned η for every setting."},
+        {t:"note",v:"<p><b>Related-work sentence.</b> Consistent with McMahan et al. [14], who showed that more local computation per round sharply reduces communication rounds, raising E from 2 to 8 reaches 70% accuracy in roughly 2.5–3× fewer rounds. Unlike their results, larger local batches converged faster in our spiking setting, likely because they reduce gradient noise under a fixed learning rate.</p>"}
+      ],
+      quiz:[
+        {q:"What does each client send to the server in federated learning?",
+         o:["Its raw data, encrypted","Its predictions on a shared test set","An update to the current global model","A summary of its data distribution"],a:2,
+         h:"The raw data never leaves the device.",
+         e:"Each client computes an update to the current global model, for example its new weights, and only that is communicated."},
+        {q:"Which is NOT one of the four properties of federated optimization in Section 1?",
+         o:["Non-IID","Asynchronous updates","Unbalanced","Limited communication"],a:1,
+         h:"The fourth one is massively distributed.",
+         e:"The four are non-IID, unbalanced, massively distributed and limited communication. The paper assumes synchronous rounds."},
+        {q:"Why is the global objective weighted by nₖ/n instead of a plain average of client losses?",
+         o:["So every example counts equally","So small clients count more","To speed up training","Because clients are non-IID"],a:0,
+         h:"Think of the A, B, C example: 2.3 versus 2.33.",
+         e:"Weighting by data share makes the client-by-client sum equal to the plain average over all examples. With equal IID shards the weights are all 1/K."},
+        {q:"Which settings turn FedAvg into FedSGD?",
+         o:["E = 1, B = 1","E = ∞, B = 1","E = 5, B = 10","E = 1, B = ∞"],a:3,
+         h:"One pass, one batch.",
+         e:"B = ∞ means the whole local dataset is one batch, and E = 1 means one pass: one gradient step per round."},
+        {q:"A client has nₖ = 1000 examples, E = 5, B = 50. How many local updates per round?",
+         o:["20","250","100","5000"],a:2,
+         h:"uₖ = E · nₖ / B.",
+         e:"5 × 1000 / 50 = 100."},
+        {q:"When does averaging two models give a model better than either parent (their Figure 1)?",
+         o:["When they started from the same initialization","When they used different random seeds","When the mixing weight θ is 1.2","When they were trained on the same data"],a:0,
+         h:"Compare the left and right plots.",
+         e:"With a common initialization, ½w + ½w′ has lower loss than either parent. With different seeds the middle is a loss spike. FedAvg sends every client the same wₜ."},
+        {q:"MNIST CNN, IID, E = 20, B = 10: how many rounds versus FedSGD's 626?",
+         o:["179","1000","483","18"],a:3,
+         h:"About 35× faster.",
+         e:"18 rounds, a 34.8× speedup. 179 is E = 5, B = ∞; 483 is FedSGD on non-IID; 1000 is the one setting that was slower."},
+        {q:"Which Table 2 setting was slower than FedSGD?",
+         o:["CNN IID, E = 20, B = 10","CNN non-IID, E = 5, B = ∞","LSTM non-IID, E = 5, B = 10","LSTM IID, E = 1, B = 50"],a:1,
+         h:"Non-IID with large batches.",
+         e:"CNN non-IID with E = 5 and B = ∞ took 1000 rounds versus 483 for FedSGD. More local work does not always help on non-IID data."},
+        {q:"How does my batch-size result compare with McMahan's, and why might it differ?",
+         o:["Same direction; both found smaller B faster","B had no effect in my runs","Opposite: larger B was faster for me, plausibly because fixed η = 0.001 makes gradient noise hurt","Opposite, because my data was non-IID"],a:2,
+         h:"11 → 7 → 6 rounds for B = 32, 64, 128.",
+         e:"McMahan tuned η for every setting and found smaller B better. With a fixed learning rate and surrogate-gradient SNNs, larger batches reduce noise. Call it a plausible reason, since it was not tested directly."},
+        {q:"In the one-number example, FedAvg with 2 clients × 2 steps reached 2.25 after one round. What does one model reach with 4 sequential steps?",
+         o:["2.25","3","1.5","2.8125"],a:3,
+         h:"0 → 1.5 → 2.25 → 2.625 → …",
+         e:"2.8125. FedAvg's round matched only two sequential steps, because parallel steps from the same start do not build on each other."}
+      ],
+      cards:[
+        {f:"The federated objective",b:"<span class='k'>f(w) = Σₖ (nₖ/n) Fₖ(w)</span>A data-weighted sum of client losses. Equal to the plain average over all examples."},
+        {f:"The FedAvg aggregation rule",b:"<span class='k'>wₜ₊₁ = Σₖ (nₖ/n) wₜ₊₁ᵏ</span>Average the client weights, weighted by data size. With my equal IID shards this is a plain 1/K average."},
+        {f:"FedSGD versus FedAvg",b:"FedSGD: one gradient per client, one server step per round. FedAvg: E epochs of local SGD with batch B, then average the weights. FedSGD = FedAvg with E = 1, B = ∞."},
+        {f:"What do K, C, E, B and η do?",b:"K total clients; C fraction per round (mine 1); E local epochs; B local batch size; η learning rate. Local updates per round uₖ = E·nₖ/B."},
+        {f:"What does IID mean here?",b:"<span class='k'>𝔼[Fₖ(w)] = f(w)</span>With a random split, each client's loss is on average the global loss. Non-IID: Fₖ can be a bad approximation of f."},
+        {f:"Why is averaging models safe in FedAvg?",b:"Every client starts each round from the same wₜ. Figure 1: with a shared initialization the average beats either parent; with different seeds it spikes."},
+        {f:"45 seconds: why is averaging K models not K times the steps?",b:"Clients step in parallel from the same start, each on its own data, and are averaged. That gives about one client's path, not K paths chained. Example: 2.25 after a FedAvg round versus 2.8125 after four sequential steps."},
+        {f:"McMahan's E and B finding",b:"More local computation per round, larger E or smaller B, means far fewer rounds. MNIST CNN IID: 626 → 18 rounds, about 35×. Lower B first."},
+        {f:"Where more local work did NOT help",b:"CNN non-IID with E = 5, B = ∞: 1000 rounds versus 483 for FedSGD. Very large E can also plateau or diverge (Figure 3)."},
+        {f:"My results versus McMahan",b:"E agrees: E 2 → 8 gave about 2.5–3× fewer rounds. B is opposite: larger B was faster for me, plausibly because fixed η = 0.001 makes gradient noise costly."},
+        {f:"Is federated learning private?",b:"It keeps raw data local and sends minimal, ephemeral updates, but gives no formal guarantee; updates can leak. My paper makes no privacy claim."}
+      ]
+    },{
+      id:"day6", n:"Day 6", title:"Client drift, non-IID and the Flower framework",
+      blurb:"When FedAvg struggles, the standard fixes (FedProx, SCAFFOLD), and one Flower round traced through my own code.",
+      notes:[
+        {t:"h",v:"When FedAvg struggles: client drift"},
+        {t:"p",v:"With non-IID data, every client's local optimum sits somewhere different. Many local steps pull each client toward <strong>its own</strong> optimum, so the averaged model lands near the average of the client optima instead of the true global optimum. That gap is <strong>client drift</strong>. More local steps and more skewed data both make it worse."},
+        {t:"widget",v:"drift"},
+        {t:"p",v:"Set non-IID strength to 0 and the client optima collapse onto the global one: no drift. That is my paper's IID setting. Push it to 1 with many local steps and FedAvg settles visibly off-target. FedProx shortens the client paths; SCAFFOLD steers them back to the true optimum. (A toy with bowl-shaped losses; real SNN losses are more complex, but the mechanism is the same.)"},
+        {t:"h",v:"Zhao et al. 2018: weight divergence"},
+        {t:"p",v:"<strong>\"Federated Learning with Non-IID Data\"</strong> [24]. Under highly skewed splits, FedAvg loses accuracy: <strong>up to 11% on MNIST, 51% on CIFAR-10 and 55% on keyword spotting</strong>. Harder tasks suffer more."},
+        {t:"eq",v:"weight divergence = ‖w_FedAvg − w_SGD‖ / ‖w_SGD‖\n<em>how far the federated model drifts from centralized SGD, same initialization</em>"},
+        {t:"p",v:"The root cause is the <strong>earth mover's distance</strong> between each client's class distribution and the population's. In their '1-class non-IID' setting each client holds only one class; in '2-class', two. Their fix is a small globally shared, class-balanced dataset: about <strong>5% shared data gave roughly +30% on CIFAR-10</strong>. The catch: sharing data partly conflicts with keeping data local."},
+        {t:"h",v:"Li et al. 2020: the four challenges"},
+        {t:"p",v:"<strong>\"Federated Learning: Challenges, Methods, and Future Directions\"</strong> [11] names four challenges: <strong>expensive communication, systems heterogeneity, statistical heterogeneity, and privacy</strong>."},
+        {t:"tbl",v:[["term","means","memory trick"],["statistical heterogeneity","clients' data is non-IID","statistical = data"],["systems heterogeneity","devices differ in storage, compute, network; few active at once","systems = hardware"]]},
+        {t:"p",v:"Section 2.3.2: classical parallel-SGD analyses assume every local solver is a copy of the same stochastic process, which the non-IID setting breaks. FedAvg has been shown to <strong>diverge</strong> in practice on heterogeneous data. Heuristic fixes that share device or proxy data may violate privacy assumptions. Open gap: few analyses allow realistic <strong>low participation</strong> or <strong>dropped devices</strong>."},
+        {t:"h",v:"FedProx: a proximal term"},
+        {t:"eq",v:"client k minimizes   F_k(w) + (μ/2) ‖w − w_t‖²\n<em>local loss plus a penalty for moving away from the global model</em>"},
+        {t:"p",v:"μ = 0 is exactly FedAvg; the paper calls FedProx a generalization and re-parametrization of FedAvg. Small μ allows drift; large μ keeps clients near w_t but slows local progress. It also accepts <strong>partial local work</strong> from slow devices instead of dropping them, and reports about <strong>22% higher absolute test accuracy</strong> on average in highly heterogeneous settings."},
+        {t:"h",v:"SCAFFOLD: control variates"},
+        {t:"eq",v:"local step:   y_i ← y_i − η_l ( g_i(y_i) − c_i + c )\ncontrol:      c_i⁺ ← c_i − c + (x − y_i) / (K η_l)\nserver:       x ← x + (η_g/|S|) Σ (y_i − x),   c ← c + (1/N) Σ (c_i⁺ − c_i)"},
+        {t:"p",v:"c_i estimates client i's gradient, c the average over clients. Subtracting c_i and adding c removes each client's bias, so local steps head toward the true optimum even on very different data. Clients are stateful, and with every c_i = 0 SCAFFOLD is FedAvg."},
+        {t:"note",class:"warn",v:"<p><b>Notation trap.</b> In SCAFFOLD, <b>N</b> is the number of clients and <b>K</b> is the number of local steps. In McMahan and in my paper, K is the number of clients.</p>"},
+        {t:"tbl",v:[["fix","idea"],["Zhao et al.","share a small balanced dataset"],["FedProx","proximal term keeps local models near w_t"],["SCAFFOLD","control variates correct each client's drift"]]},
+        {t:"h",v:"Why I did not need them, and why I cite them"},
+        {t:"p",v:"My split is IID with full participation, so every client's data looks like the global data and the client optima nearly coincide: little drift, so plain FedAvg works. They are the standard fixes for non-IID data, and a <strong>Dirichlet non-IID split</strong> is my first future experiment. Expected: slower convergence, more oscillation, lower final accuracy, larger E starting to hurt, and FedProx or SCAFFOLD recovering part of the gap."},
+        {t:"h",v:"Flower, in my own code"},
+        {t:"p",v:"My code uses Flower's newer <strong>Message API</strong>, not the older NumPyClient. The mapping:"},
+        {t:"tbl",v:[["older API","my code","file"],["NumPyClient.fit","@app.train() → train_fn_app","client_app.py"],["NumPyClient.evaluate","@app.evaluate() → evaluate_fn_app","client_app.py"],["get_parameters","ArrayRecord(model.state_dict())","both"],["start_server","@app.main() + strategy.start(grid, …)","server_app.py"],["start_simulation","flwr run . (Simulation Engine, Ray)","pyproject.toml"]]},
+        {t:"eq",v:"strategy = FedAvg(fraction_train=1.0, fraction_evaluate=1.0)\nstrategy.start(grid, initial_arrays=arrays,\n               train_config=ConfigRecord({\"learning-rate\": lr}),\n               num_rounds=60, evaluate_fn=Dummy(context))"},
+        {t:"h",v:"One Flower round, step by step"},
+        {t:"eq",v:"1  select        fraction_train = 1.0 → all K clients\n2  broadcast     Message with the global ArrayRecord + config\n3  train         train_fn_app: load weights, 1/K shard, E epochs,\n                 Adam lr 0.001, cross-entropy on mean spikes\n4  reply         new arrays + metrics {train_loss, num-examples}\n5  aggregate     FedAvg: weighted average by num-examples\n6  central eval  evaluate_fn → central_evaluate on the full test set\n7  fed. eval     evaluate_fn_app on each client's test shard\nrepeat for 60 rounds, then save final_model.pt"},
+        {t:"note",v:"<p><b>Global Eval Accuracy</b> is the aggregated global model, evaluated on the server after each round, on the <b>full held-out test set</b> (CentralEvaluate.csv). The clients' test shards together make up exactly that set, so the federated accuracy equals it: the second evaluation is redundant.</p>"},
+        {t:"h",v:"Facts confirmed from my code"},
+        {t:"tbl",v:[["item","value"],["loss","CrossEntropyLoss on time-averaged output spikes (not slayer.loss)"],["prediction","argmax of mean spikes: most spikes wins"],["optimizer","Adam, lr 0.001, re-created each round per client"],["data","61,237 train / 15,313 test .npz files (80/20), pre-split folders"],["per client (train)","K=2: ≈30,619 · K=4: ≈15,310 · K=8: ≈7,655"],["participation","full: fraction_train = fraction_evaluate = 1.0"]]},
+        {t:"p",v:"About 7.7 files per recording, so recordings were sliced into T = 16 windows. <strong>Still to confirm:</strong> whether the 80/20 split was made by recording (clean) or by file (possible leakage). Full participation buys a clean ablation with no sampling noise; it costs realism, since real deployments sample few of many devices."}
+      ],
+      quiz:[
+        {q:"What is client drift?",
+         o:["Clients dropping out mid-round","Local steps pulling each client toward its own optimum, so the average lands away from the global one","The learning rate decaying over rounds","Clients receiving stale global weights"],a:1,
+         h:"Think about where each client's local optimum sits under non-IID data.",
+         e:"With non-IID data each client heads to its own optimum; averaging those gives roughly the mean of the client optima, not the true global optimum."},
+        {q:"Zhao et al.: how much can accuracy drop on CIFAR-10 under highly skewed non-IID data?",
+         o:["Up to 11%","Up to 55%","Up to 5%","Up to 51%"],a:3,
+         h:"MNIST 11, CIFAR 51, KWS 55.",
+         e:"Up to 51% on CIFAR-10. 11% is MNIST and 55% is keyword spotting."},
+        {q:"What do Zhao et al. use to measure how non-IID a client is?",
+         o:["Earth mover's distance between its class distribution and the population's","The number of examples it holds","Its training loss","The learning rate times epochs"],a:0,
+         h:"A distance between two distributions.",
+         e:"Larger EMD means larger weight divergence and lower accuracy."},
+        {q:"What does 'systems heterogeneity' mean?",
+         o:["Clients' data is non-IID","Clients use different architectures","Devices differ in storage, compute and network, and few are active at once","Model updates can leak information"],a:2,
+         h:"Statistical = data, systems = …",
+         e:"Systems heterogeneity is about the devices. Non-IID data is statistical heterogeneity."},
+        {q:"What does FedProx add to each client's local objective?",
+         o:["A small shared dataset","Control variates","Gradient clipping","A proximal term (μ/2)‖w − w_t‖²"],a:3,
+         h:"It penalizes moving away from the global model.",
+         e:"The proximal term keeps local models near w_t. Shared data is Zhao's fix; control variates are SCAFFOLD."},
+        {q:"In FedProx, what does μ = 0 give?",
+         o:["FedAvg","SCAFFOLD","Clients frozen at w_t","FedSGD with B = 1"],a:0,
+         h:"Remove the penalty.",
+         e:"Without the proximal term, FedProx is plain FedAvg."},
+        {q:"In SCAFFOLD's local step y ← y − η(g_i − c_i + c), what does (c − c_i) do?",
+         o:["Adds noise for privacy","Corrects the client's gradient bias toward the global direction","Scales the learning rate","Selects which clients train"],a:1,
+         h:"c_i ≈ my gradient, c ≈ everyone's average.",
+         e:"Subtracting c_i and adding c removes client i's bias, so local steps head toward the true optimum even on very different data."},
+        {q:"In SCAFFOLD's notation, what is K?",
+         o:["The number of clients","The number of classes","The number of local steps","The number of rounds"],a:2,
+         h:"It differs from McMahan's notation.",
+         e:"In SCAFFOLD, N is the number of clients and K the local steps. In McMahan and my paper, K is the number of clients."},
+        {q:"In my code, which function does local training on a client?",
+         o:["NumPyClient.fit","central_evaluate","evaluate_fn_app","train_fn_app, decorated with @app.train()"],a:3,
+         h:"My code uses the new Message API.",
+         e:"train_fn_app loads the global weights, trains E epochs on the client's shard, and replies with new arrays and metrics."},
+        {q:"What is 'Global Eval Accuracy' in my paper computed on?",
+         o:["Each client's training data","The average of the clients' local models on their shards","The aggregated global model, on the server, on the full test set","Client 0's test shard"],a:2,
+         h:"evaluate_fn → central_evaluate → load_global_eval.",
+         e:"The aggregated global model is evaluated server-side after each round on all 15,313 test files and saved to CentralEvaluate.csv."},
+        {q:"Which loss does my code actually use?",
+         o:["slayer.loss.SpikeRate","CrossEntropyLoss on the time-averaged output spikes","slayer.loss.SpikeTime","Mean squared error on spike counts"],a:1,
+         h:"Look at train() in task.py.",
+         e:"outputs.mean over T gives logits, then CrossEntropyLoss. It is a rate-based softmax loss, not slayer.loss."},
+        {q:"Why did my paper not need FedProx or SCAFFOLD?",
+         o:["SNNs cannot drift","The IID split with full participation means client optima nearly coincide, so drift is small","The learning rate was small","Only 60 rounds were run"],a:1,
+         h:"Non-IID strength = 0 in the simulator.",
+         e:"With IID data each client's data looks like the global data. The fixes become relevant for the planned Dirichlet non-IID experiment."}
+      ],
+      cards:[
+        {f:"What is client drift?",b:"With non-IID data, local steps pull each client toward its own optimum, so the averaged model lands near the average of the client optima instead of the true global optimum. More local steps and more skew make it worse."},
+        {f:"Zhao et al.: weight divergence",b:"<span class='k'>‖w_FedAvg − w_SGD‖ / ‖w_SGD‖</span>Driven by the earth mover's distance between each client's class distribution and the population's."},
+        {f:"Zhao et al.: the numbers",b:"Accuracy drops up to 11% (MNIST), 51% (CIFAR-10), 55% (KWS). Fix: about 5% shared balanced data gives roughly +30% on CIFAR-10, at some cost to data locality."},
+        {f:"The four challenges (Li et al. survey)",b:"Expensive communication, systems heterogeneity, statistical heterogeneity, privacy."},
+        {f:"Statistical versus systems heterogeneity",b:"Statistical = the data is non-IID across clients. Systems = the devices differ in storage, compute, network and availability."},
+        {f:"Survey Section 2.3.2 in one breath",b:"Classical analyses assume every local solver is the same stochastic process (IID). FedAvg can diverge on heterogeneous data. Open gap: low participation and dropped devices."},
+        {f:"FedProx in two sentences",b:"<span class='k'>F_k(w) + (μ/2)‖w − w_t‖²</span>The proximal term keeps local models near the global model and limits drift; μ = 0 is FedAvg. It accepts partial work from slow devices and reports about 22% higher accuracy under high heterogeneity."},
+        {f:"SCAFFOLD in two sentences",b:"<span class='k'>y ← y − η(g_i − c_i + c)</span>Each client keeps a control variate estimating its gradient bias and subtracts it at every local step, which removes drift. With c_i = 0 it is FedAvg."},
+        {f:"The fix map",b:"Zhao = shared data. FedProx = proximal term. SCAFFOLD = control variates."},
+        {f:"SCAFFOLD notation trap",b:"In SCAFFOLD, N = clients and K = local steps. In McMahan and my paper, K = clients."},
+        {f:"Why I didn't need FedProx or SCAFFOLD",b:"IID split with full participation: client optima nearly coincide, so drift is small. They are the next step for a Dirichlet non-IID split."},
+        {f:"Designing the non-IID experiment",b:"Dirichlet class split with α = 0.1, 0.5, 1.0. Expect slower convergence, more oscillation, lower final accuracy, larger E starting to hurt, and FedProx or SCAFFOLD recovering part of the gap."},
+        {f:"One Flower round in my code",b:"Broadcast the global ArrayRecord → train_fn_app trains E epochs on the 1/K shard and returns arrays + num-examples → FedAvg weighted average → evaluate_fn tests the global model on the full test set. Repeat 60 times."},
+        {f:"What is Global Eval Accuracy computed on?",b:"The aggregated global model, on the server, after each round, on the full 15,313-file test set (CentralEvaluate.csv)."},
+        {f:"Old Flower API versus mine",b:"fit → @app.train (train_fn_app); evaluate → @app.evaluate (evaluate_fn_app); get_parameters → ArrayRecord(state_dict); start_server → @app.main + strategy.start."},
+        {f:"Loss, optimizer and data in my code",b:"CrossEntropyLoss on time-averaged output spikes; Adam lr 0.001. Data: 61,237 train / 15,313 test files, IID 1/K shards (≈15,310 per client at K = 4)."},
+        {f:"Full participation: what it buys and costs",b:"Buys a clean ablation with no client-sampling noise. Costs realism: real deployments sample a small fraction of many devices."}
+      ]
+    }]
+  }]
+};
+
+/* ============================================================
+   WIDGETS
+   ============================================================ */
+const px=(t,T,a,b)=>a+t/T*(b-a);
+function rng(id,lab,min,max,step,val){
+  return `<div class="ctl"><label for="${id}">${lab}</label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"><output id="${id}v"></output></div>`;
+}
+const WIDGETS={
+ lif:{
+  html:`<p class="w-t">One neuron, constant input. Watch where it settles.</p>
+   <svg viewBox="0 0 660 260" width="100%" role="img"><title>Membrane potential over time</title>
+    <line x1="56" y1="220" x2="632" y2="220" stroke="var(--rule-2)" stroke-width="1"/>
+    <line x1="56" y1="30" x2="56" y2="220" stroke="var(--rule-2)" stroke-width="1"/>
+    <line id="lif-thr" x1="56" y1="62" x2="632" y2="62" stroke="var(--spike)" stroke-width="1" class="dash"/>
+    <line id="lif-ss" x1="56" y1="150" x2="632" y2="150" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="2 4"/>
+    <polyline id="lif-tr" fill="none" stroke="var(--volt)" stroke-width="2" stroke-linejoin="round"/>
+    <g id="lif-sp"></g>
+    <text x="50" y="66" text-anchor="end" font-size="11" fill="var(--spike)" font-family="IBM Plex Mono">ϑ</text>
+    <text x="50" y="224" text-anchor="end" font-size="11" fill="var(--ink-3)" font-family="IBM Plex Mono">0</text>
+    <text id="lif-sl" x="50" y="154" text-anchor="end" font-size="11" fill="var(--ink-3)" font-family="IBM Plex Mono">R·I</text>
+    <text x="344" y="248" text-anchor="middle" font-size="11" fill="var(--ink-3)">time (ms)</text>
+   </svg>
+   ${rng("lif-i","input R·I",0,2,.05,.6)}${rng("lif-t","τ mem",2,40,1,10)}
+   <div class="stats"><div class="stat"><span>settles at</span><b id="lif-a">—</b></div><div class="stat"><span>spikes in 200 ms</span><b id="lif-b">—</b></div><div class="stat"><span>firing rate</span><b id="lif-c">—</b></div></div>`,
+  init(){
+   const T=200,Y0=220,YT=30,UMIN=-.05,UMAX=1.45;
+   const py=u=>Y0-(u-UMIN)/(UMAX-UMIN)*(Y0-YT);
+   const $=id=>document.getElementById(id);
+   function run(){
+    const I=+$("lif-i").value,tau=+$("lif-t").value;
+    $("lif-iv").textContent=I.toFixed(2);$("lif-tv").textContent=tau+" ms";
+    let U=0,pts=[],sp=[];
+    for(let t=0;t<=T;t+=.2){
+     pts.push(px(t,T,56,632).toFixed(1)+","+py(Math.min(U,1)).toFixed(1));
+     U+=.2*(-U+I)/tau;
+     if(U>=1){sp.push(t);U=0;pts.push(px(t,T,56,632).toFixed(1)+","+py(1).toFixed(1),px(t,T,56,632).toFixed(1)+","+py(0).toFixed(1));}
+    }
+    $("lif-tr").setAttribute("points",pts.join(" "));
+    $("lif-sp").innerHTML=sp.map(t=>`<line x1="${px(t,T,56,632).toFixed(1)}" y1="34" x2="${px(t,T,56,632).toFixed(1)}" y2="50" stroke="var(--spike)" stroke-width="2"/>`).join("");
+    const y=py(Math.min(I,1.42));
+    $("lif-ss").setAttribute("y1",y);$("lif-ss").setAttribute("y2",y);$("lif-sl").setAttribute("y",(y+4).toFixed(1));
+    $("lif-a").textContent=I.toFixed(2);$("lif-b").textContent=sp.length;$("lif-c").textContent=Math.round(sp.length/.2)+" Hz";
+   }
+   ["lif-i","lif-t"].forEach(i=>$(i).addEventListener("input",run));run();
+  }},
+
+ cuba:{
+  html:`<p class="w-t">Spikes in, current, then voltage. Each stage smooths the one before.</p>
+   <svg viewBox="0 0 660 400" width="100%" role="img"><title>Two leaky stages in series</title>
+    <text x="56" y="20" font-size="11" fill="var(--ink-3)">input spikes</text>
+    <line x1="56" y1="64" x2="632" y2="64" stroke="var(--rule-2)" stroke-width="1"/><g id="cu-sp"></g>
+    <text x="56" y="100" font-size="11" fill="var(--ink-3)">synaptic current</text>
+    <line x1="56" y1="198" x2="632" y2="198" stroke="var(--rule-2)" stroke-width="1"/>
+    <polyline id="cu-i" fill="none" stroke="var(--curr)" stroke-width="2" stroke-linejoin="round"/>
+    <text x="56" y="234" font-size="11" fill="var(--ink-3)">membrane voltage</text>
+    <line x1="56" y1="348" x2="632" y2="348" stroke="var(--rule-2)" stroke-width="1"/>
+    <line x1="56" y1="262" x2="632" y2="262" stroke="var(--spike)" stroke-width="1" class="dash"/>
+    <text x="50" y="266" text-anchor="end" font-size="11" fill="var(--spike)" font-family="IBM Plex Mono">ϑ</text>
+    <polyline id="cu-u" fill="none" stroke="var(--volt)" stroke-width="2" stroke-linejoin="round"/><g id="cu-o"></g>
+    <text x="344" y="380" text-anchor="middle" font-size="11" fill="var(--ink-3)">time (ms)</text>
+   </svg>
+   ${rng("cu-w","weight W",.05,1,.05,.35)}${rng("cu-s","τ syn",1,30,1,5)}${rng("cu-m","τ mem",2,40,1,12)}
+   <div class="stats"><div class="stat"><span>output spikes</span><b id="cu-n">—</b></div></div>`,
+  init(){
+   const T=200,S=[12,26,34,58,92,118,126,134,168,176],$=id=>document.getElementById(id);
+   function run(){
+    const W=+$("cu-w").value,ts=+$("cu-s").value,tm=+$("cu-m").value;
+    $("cu-wv").textContent=W.toFixed(2);$("cu-sv").textContent=ts+" ms";$("cu-mv").textContent=tm+" ms";
+    $("cu-sp").innerHTML=S.map(t=>`<line x1="${px(t,T,56,632).toFixed(1)}" y1="32" x2="${px(t,T,56,632).toFixed(1)}" y2="64" stroke="var(--ok)" stroke-width="2"/>`).join("");
+    let I=0,U=0,si=0,Is=[],Us=[],ts_=[],f=[];
+    for(let t=0;t<=T;t+=.2){
+     while(si<S.length&&S[si]<=t){I+=W;si++;}
+     Is.push(I);ts_.push(t);
+     if(U>=1){U=0;f.push(t);}
+     Us.push(U);U+=.2*(-U+I)/tm;if(U>1.02)U=1.02;I+=.2*(-I)/ts;
+    }
+    const mx=Math.max(...Is)||1;
+    $("cu-i").setAttribute("points",Is.map((v,i)=>px(ts_[i],T,56,632).toFixed(1)+","+(198-v/mx*90).toFixed(1)).join(" "));
+    $("cu-u").setAttribute("points",Us.map((v,i)=>px(ts_[i],T,56,632).toFixed(1)+","+(348-Math.min(v,1)*86).toFixed(1)).join(" "));
+    $("cu-o").innerHTML=f.map(t=>`<line x1="${px(t,T,56,632).toFixed(1)}" y1="244" x2="${px(t,T,56,632).toFixed(1)}" y2="258" stroke="var(--spike)" stroke-width="2"/>`).join("");
+    $("cu-n").textContent=f.length;
+   }
+   ["cu-w","cu-s","cu-m"].forEach(i=>$(i).addEventListener("input",run));run();
+  }},
+
+ delta:{
+  html:`<p class="w-t">Shrink the pulse while holding its area fixed. The jump never changes.</p>
+   <svg viewBox="0 0 660 300" width="100%" role="img"><title>A delta as the limit of narrow pulses</title>
+    <text x="56" y="20" font-size="11" fill="var(--ink-3)">input pulse — area always equals W</text>
+    <line x1="56" y1="146" x2="632" y2="146" stroke="var(--rule-2)" stroke-width="1"/>
+    <rect id="d-p" x="240" y="100" width="40" height="46" fill="var(--ok)" rx="1"/>
+    <text id="d-h" x="290" y="118" font-size="11" fill="var(--ink-3)" font-family="IBM Plex Mono"></text>
+    <text x="56" y="180" font-size="11" fill="var(--ink-3)">resulting current</text>
+    <line x1="56" y1="268" x2="632" y2="268" stroke="var(--rule-2)" stroke-width="1"/>
+    <line x1="56" y1="210" x2="632" y2="210" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="3 4"/>
+    <text x="50" y="214" text-anchor="end" font-size="11" fill="var(--ink-3)" font-family="IBM Plex Mono">W</text>
+    <polyline id="d-t" fill="none" stroke="var(--curr)" stroke-width="2" stroke-linejoin="round"/>
+   </svg>
+   ${rng("d-e","pulse width ε",.3,24,.3,12)}
+   <div class="stats"><div class="stat"><span>pulse height</span><b id="d-a">—</b></div><div class="stat"><span>area</span><b id="d-b">—</b></div><div class="stat"><span>current jump</span><b id="d-c">—</b></div></div>`,
+  init(){
+   const T=200,W=.5,T0=70,$=id=>document.getElementById(id);
+   function run(){
+    const e=+$("d-e").value,h=W/e;
+    $("d-ev").textContent=e.toFixed(1);
+    const pw=Math.max(1.5,e/T*576),ph=Math.min(104,h*38),p=$("d-p");
+    p.setAttribute("x",px(T0,T,56,632).toFixed(1));p.setAttribute("width",pw.toFixed(1));
+    p.setAttribute("y",(146-ph).toFixed(1));p.setAttribute("height",ph.toFixed(1));
+    const hl=$("d-h");hl.setAttribute("x",(px(T0,T,56,632)+pw+8).toFixed(1));
+    hl.setAttribute("y",Math.max(20,146-ph+12).toFixed(1));hl.textContent=h.toFixed(2);
+    let I=0,pts=[],mxv=0;
+    for(let t=0;t<=T;t+=.1){
+     pts.push(px(t,T,56,632).toFixed(1)+","+(268-I*116).toFixed(1));
+     I+=.1*(-I/60+((t>=T0&&t<T0+e)?h:0));if(I>mxv)mxv=I;
+    }
+    $("d-t").setAttribute("points",pts.join(" "));
+    $("d-a").textContent=h.toFixed(2);$("d-b").textContent=(h*e).toFixed(2);$("d-c").textContent=mxv.toFixed(2);
+   }
+   $("d-e").addEventListener("input",run);run();
+  }},
+
+ reset:{
+  html:`<p class="w-t">Same input, two reset rules. Push the input up and they diverge.</p>
+   <svg viewBox="0 0 660 250" width="100%" role="img"><title>Soft versus hard reset</title>
+    <line x1="56" y1="206" x2="632" y2="206" stroke="var(--rule-2)" stroke-width="1"/>
+    <line x1="56" y1="60" x2="632" y2="60" stroke="var(--spike)" stroke-width="1" class="dash"/>
+    <text x="50" y="64" text-anchor="end" font-size="11" fill="var(--spike)" font-family="IBM Plex Mono">ϑ</text>
+    <text x="50" y="210" text-anchor="end" font-size="11" fill="var(--ink-3)" font-family="IBM Plex Mono">0</text>
+    <polyline id="r-s" fill="none" stroke="var(--volt)" stroke-width="2"/>
+    <polyline id="r-h" fill="none" stroke="var(--curr)" stroke-width="2" stroke-dasharray="5 3"/>
+    <text x="344" y="238" text-anchor="middle" font-size="11" fill="var(--ink-3)">time step</text>
+   </svg>
+   <div class="trace-lab"><span><i style="background:var(--volt)"></i>soft — subtract the threshold</span><span><i style="background:var(--curr)"></i>hard — set to zero</span></div>
+   ${rng("r-i","input I",.05,1.5,.05,.45)}${rng("r-b","β",.1,.95,.05,.8)}
+   <div class="stats"><div class="stat"><span>spikes, soft</span><b id="r-a">—</b></div><div class="stat"><span>spikes, hard</span><b id="r-c">—</b></div></div>`,
+  init(){
+   const N=60,$=id=>document.getElementById(id);
+   function run(){
+    const I=+$("r-i").value,b=+$("r-b").value;
+    $("r-iv").textContent=I.toFixed(2);$("r-bv").textContent=b.toFixed(2);
+    let Us=0,Uh=0,ps=[],ph=[],cs=0,ch=0;
+    for(let n=0;n<=N;n++){
+     ps.push(px(n,N,56,632).toFixed(1)+","+(206-Math.min(Us,1.35)*146).toFixed(1));
+     ph.push(px(n,N,56,632).toFixed(1)+","+(206-Math.min(Uh,1.35)*146).toFixed(1));
+     const ss=Us>=1?1:0;if(ss)cs++;Us=b*Us+I-ss;
+     const sh=Uh>=1?1:0;if(sh){ch++;Uh=0;}Uh=b*Uh+I;
+    }
+    $("r-s").setAttribute("points",ps.join(" "));$("r-h").setAttribute("points",ph.join(" "));
+    $("r-a").textContent=cs;$("r-c").textContent=ch;
+   }
+   ["r-i","r-b"].forEach(i=>$(i).addEventListener("input",run));run();
+  }},
+
+ surro:{
+  html:`<p class="w-t">The step never changes. Only the backward pass gets a stand-in.</p>
+   <svg viewBox="0 0 660 330" width="100%" role="img"><title>The step and its surrogates</title>
+    <text x="56" y="18" font-size="11" fill="var(--ink-3)">forward pass — a hard step, always</text>
+    <line x1="56" y1="106" x2="632" y2="106" stroke="var(--rule)" stroke-width="1"/>
+    <line x1="344" y1="32" x2="344" y2="292" stroke="var(--spike)" stroke-width="1" class="dash"/>
+    <path d="M 56 106 L 344 106 L 344 42 L 632 42" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+    <text x="110" y="122" font-size="11" fill="var(--ink-3)">slope 0</text>
+    <text x="500" y="60" font-size="11" fill="var(--ink-3)">slope 0</text>
+    <text x="350" y="76" font-size="11" fill="var(--spike)">undefined</text>
+    <text x="56" y="164" font-size="11" fill="var(--ink-3)">backward pass — pick a bump instead</text>
+    <line x1="56" y1="292" x2="632" y2="292" stroke="var(--rule-2)" stroke-width="1"/>
+    <path id="sr-r" fill="none" stroke="var(--ok)" stroke-width="2"/>
+    <path id="sr-s" fill="none" stroke="var(--volt)" stroke-width="2"/>
+    <path id="sr-a" fill="none" stroke="var(--curr)" stroke-width="2"/>
+    <path id="sr-e" fill="none" stroke="var(--spike)" stroke-width="2" stroke-dasharray="5 3"/>
+    <text x="344" y="312" text-anchor="middle" font-size="11" fill="var(--spike)" font-family="IBM Plex Mono">U = &#977;</text>
+   </svg>
+   <div class="trace-lab"><span><i style="background:var(--ok)"></i>rectangular</span><span><i style="background:var(--volt)"></i>sigmoid derivative</span><span><i style="background:var(--curr)"></i>arctan derivative</span><span><i style="background:var(--spike)"></i>exponential (SLAYER)</span></div>
+   ${rng("sr-w","width",.06,1.2,.02,.5)}`,
+  init(){
+   const ZY=292,H=112,SPAN=2.4,$=id=>document.getElementById(id);
+   const pxv=v=>344+v/SPAN*288;
+   function build(f){let d="",first=true;
+    for(let i=0;i<=400;i++){const v=-SPAN/2+i/400*SPAN,x=pxv(v);
+     if(x<56||x>632)continue;
+     d+=(first?"M ":"L ")+x.toFixed(1)+" "+(ZY-Math.min(f(v),1)*H).toFixed(1)+" ";first=false;}
+    return d;}
+   function run(){
+    const w=+$("sr-w").value;$("sr-wv").textContent=w.toFixed(2);
+    $("sr-r").setAttribute("d",build(v=>Math.abs(v)<w/2?1:0));
+    $("sr-s").setAttribute("d",build(v=>{const s=1/(1+Math.exp(-v/(w/6)));return 4*s*(1-s);}));
+    $("sr-a").setAttribute("d",build(v=>{const k=v/(w/3);return 1/(1+k*k);}));
+    $("sr-e").setAttribute("d",build(v=>Math.exp(-Math.abs(v)/(w/4))));
+   }
+   $("sr-w").addEventListener("input",run);run();
+  }},
+
+ bin:{
+  html:`<p class="w-t">One pixel, seven events in one second. Cut the time into T bins and compare OR with counting.</p>
+   <svg viewBox="0 0 660 200" width="100%" role="img"><title>Binning one pixel's events</title>
+    <text x="56" y="20" font-size="11" fill="var(--ink-3)">events</text>
+    <line x1="56" y1="60" x2="632" y2="60" stroke="var(--rule-2)" stroke-width="1"/><g id="b-ev"></g><g id="b-ed"></g>
+    <text x="56" y="92" font-size="11" fill="var(--ink-3)">count per bin</text><g id="b-c"></g>
+    <text x="56" y="150" font-size="11" fill="var(--ink-3)">OR per bin</text><g id="b-o"></g>
+   </svg>
+   ${rng("b-t","time bins T",0,3,1,2)}
+   <div class="stats"><div class="stat"><span>events</span><b>7</b></div><div class="stat"><span>kept by OR</span><b id="b-k">—</b></div><div class="stat"><span>hidden by OR</span><b id="b-h">—</b></div></div>`,
+  init(){
+   const E=[30,45,50,210,700,720,905],Ts=[4,8,16,32],$=id=>document.getElementById(id);
+   $("b-ev").innerHTML=E.map(t=>`<line x1="${px(t,1000,56,632).toFixed(1)}" y1="34" x2="${px(t,1000,56,632).toFixed(1)}" y2="60" stroke="var(--ok)" stroke-width="2"/>`).join("");
+   function run(){
+    const T=Ts[+$("b-t").value];$("b-tv").textContent=T;
+    const c=new Array(T).fill(0);E.forEach(t=>c[Math.floor(t/1000*T)]++);
+    const w=576/T;let ed="",cc="",oo="";
+    for(let i=0;i<=T;i++)ed+=`<line x1="${(56+i*w).toFixed(1)}" y1="28" x2="${(56+i*w).toFixed(1)}" y2="64" stroke="var(--rule-2)" stroke-width="1" stroke-dasharray="2 3"/>`;
+    c.forEach((v,i)=>{const x=56+i*w;
+     cc+=`<rect x="${(x+1).toFixed(1)}" y="100" width="${(w-2).toFixed(1)}" height="32" rx="3" fill="${v?"var(--curr)":"var(--panel-2)"}" opacity="${v?Math.min(1,.35+.25*v):1}"/>`+(w>16?`<text x="${(x+w/2).toFixed(1)}" y="121" text-anchor="middle" font-size="11" fill="var(--ink)" font-family="IBM Plex Mono">${v}</text>`:"");
+     oo+=`<rect x="${(x+1).toFixed(1)}" y="158" width="${(w-2).toFixed(1)}" height="32" rx="3" fill="${v?"var(--volt)":"var(--panel-2)"}"/>`+(w>16?`<text x="${(x+w/2).toFixed(1)}" y="179" text-anchor="middle" font-size="11" fill="${v?"#fff":"var(--ink-3)"}" font-family="IBM Plex Mono">${v?1:0}</text>`:"");});
+    $("b-ed").innerHTML=ed;$("b-c").innerHTML=cc;$("b-o").innerHTML=oo;
+    const k=c.filter(v=>v>0).length;$("b-k").textContent=k;$("b-h").textContent=7-k;
+   }
+   $("b-t").addEventListener("input",run);run();
+  }},
+
+ comm:{
+  html:`<p class="w-t">Communication cost of one model, P ≈ 607,076 parameters.</p>
+   ${rng("c-k","clients K",1,16,1,8)}${rng("c-b","bytes / value",0,2,1,0)}${rng("c-r","rounds R",10,100,10,60)}
+   <div class="stats"><div class="stat"><span>model M = P × b</span><b id="c-1">—</b></div><div class="stat"><span>upload M × K</span><b id="c-2">—</b></div><div class="stat"><span>up + down × 2</span><b id="c-3">—</b></div><div class="stat"><span>all rounds × R</span><b id="c-4">—</b></div></div>`,
+  init(){
+   const P=607076,B=[[4,"fp32"],[2,"fp16"],[1,"int8"]],$=id=>document.getElementById(id);
+   const f=x=>x>=1e9?(x/1e9).toFixed(2)+" GB":(x/1e6).toFixed(2)+" MB";
+   function run(){
+    const K=+$("c-k").value,b=B[+$("c-b").value],R=+$("c-r").value,M=P*b[0];
+    $("c-kv").textContent=K;$("c-bv").textContent=b[1];$("c-rv").textContent=R;
+    $("c-1").textContent=f(M);$("c-2").textContent=f(M*K);$("c-3").textContent=f(M*K*2);$("c-4").textContent=f(M*K*2*R);
+   }
+   ["c-k","c-b","c-r"].forEach(i=>$(i).addEventListener("input",run));run();
+  }},
+
+ fedavg:{
+  html:`<p class="w-t">A one-number model. Each client pulls w toward its own target; the best global w is 3. Compare FedAvg with one model taking all K × u steps in a row.</p>
+   <svg viewBox="0 0 660 250" width="100%" role="img"><title>FedAvg versus sequential steps</title>
+    <line x1="56" y1="206" x2="632" y2="206" stroke="var(--rule-2)" stroke-width="1"/>
+    <line x1="56" y1="30" x2="56" y2="206" stroke="var(--rule-2)" stroke-width="1"/>
+    <line x1="56" y1="54" x2="632" y2="54" stroke="var(--ok)" stroke-width="1" class="dash"/>
+    <text x="50" y="58" text-anchor="end" font-size="11" fill="var(--ok)" font-family="IBM Plex Mono">3</text>
+    <text x="50" y="210" text-anchor="end" font-size="11" fill="var(--ink-3)" font-family="IBM Plex Mono">0</text>
+    <polyline id="fa-f" fill="none" stroke="var(--volt)" stroke-width="2.5"/><g id="fa-fd"></g>
+    <polyline id="fa-s" fill="none" stroke="var(--curr)" stroke-width="2" stroke-dasharray="5 3"/>
+    <text x="344" y="236" text-anchor="middle" font-size="11" fill="var(--ink-3)">communication round</text>
+   </svg>
+   <div class="trace-lab"><span><i style="background:var(--volt)"></i>FedAvg global w</span><span><i style="background:var(--curr)"></i>one model, K × u sequential steps per round</span><span><i style="background:var(--ok)"></i>best w = 3</span></div>
+   ${rng("fa-k","clients K",2,8,1,2)}${rng("fa-u","local steps u",1,8,1,2)}${rng("fa-e","η",.05,.5,.05,.2)}
+   <div class="stats"><div class="stat"><span>FedAvg after round 1</span><b id="fa-1">—</b></div><div class="stat"><span>sequential after round 1</span><b id="fa-2">—</b></div><div class="stat"><span>FedAvg rounds to 2.9</span><b id="fa-3">—</b></div></div>`,
+  init(){
+   const R=10,$=id=>document.getElementById(id),py=w=>206-w/3.3*168;
+   function run(){
+    const K=+$("fa-k").value,u=+$("fa-u").value,e=+$("fa-e").value;
+    $("fa-kv").textContent=K;$("fa-uv").textContent=u;$("fa-ev").textContent=e.toFixed(2);
+    const tg=[];for(let k=0;k<K;k++)tg.push(K===1?3:2+2*k/(K-1));
+    let w=0,s=0,pf=[px(0,R,56,632).toFixed(1)+","+py(0).toFixed(1)],ps=[pf[0]],dots="",first=null,firstS=null,hit="—";
+    for(let r=1;r<=R;r++){
+     let acc=0;tg.forEach(a=>{let x=w;for(let i=0;i<u;i++)x-=e*(x-a);acc+=x;});w=acc/K;
+     for(let i=0;i<K*u;i++)s-=e*(s-3);
+     if(r===1){first=w;firstS=s;}
+     if(hit==="—"&&w>=2.9)hit=r;
+     const X=px(r,R,56,632).toFixed(1);pf.push(X+","+py(w).toFixed(1));ps.push(X+","+py(s).toFixed(1));
+     dots+=`<circle cx="${X}" cy="${py(w).toFixed(1)}" r="3" fill="var(--volt)"/>`;
+    }
+    $("fa-f").setAttribute("points",pf.join(" "));$("fa-s").setAttribute("points",ps.join(" "));$("fa-fd").innerHTML=dots;
+    $("fa-1").textContent=first.toFixed(3);$("fa-2").textContent=firstS.toFixed(3);$("fa-3").textContent=hit;
+   }
+   ["fa-k","fa-u","fa-e"].forEach(i=>$(i).addEventListener("input",run));run();
+  }},
+
+ drift:{
+  html:`<p class="w-t">Three clients, each with its own optimum. Compare how FedAvg, FedProx and SCAFFOLD handle drift.</p>
+   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="dr-m">
+    <button class="btn ghost" style="margin:0;padding:7px 14px" data-m="avg">FedAvg</button>
+    <button class="btn ghost" style="margin:0;padding:7px 14px" data-m="prox">FedProx</button>
+    <button class="btn ghost" style="margin:0;padding:7px 14px" data-m="scaf">SCAFFOLD</button>
+   </div>
+   <canvas id="dr-c" style="width:100%;height:340px;display:block"></canvas>
+   <div class="trace-lab"><span><i style="background:var(--ok)"></i>client optima</span><span><i style="background:var(--ink)"></i>true global optimum</span><span><i style="background:var(--volt)"></i>global model per round</span><span><i style="background:var(--curr)"></i>client paths, last round</span></div>
+   ${rng("dr-h","non-IID strength",0,1,.05,1)}${rng("dr-k","local steps",1,40,1,25)}${rng("dr-mu","FedProx μ",0,3,.1,1)}
+   <div class="stats"><div class="stat"><span>final distance to optimum</span><b id="dr-d">—</b></div><div class="stat"><span>method</span><b id="dr-n">—</b></div></div>`,
+  init(){
+   const $=id=>document.getElementById(id),cv=$("dr-c"),ctx=cv.getContext("2d");let M="avg";
+   const bA=[[[4,0],[0,.5]],[[.5,0],[0,4]],[[2,1.5],[1.5,2]]],bO=[[-1.6,1.2],[1.8,1.0],[.2,-1.7]];
+   const mv=(A,v)=>[A[0][0]*v[0]+A[0][1]*v[1],A[1][0]*v[0]+A[1][1]*v[1]];
+   const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim()||"#888";
+   function sim(){
+    const h=+$("dr-h").value,K=+$("dr-k").value,mu=+$("dr-mu").value,eta=.08,R=10;
+    const A=bA.map(B=>[[1+h*(B[0][0]-1),h*B[0][1]],[h*B[1][0],1+h*(B[1][1]-1)]]),o=bO.map(p=>[p[0]*h,p[1]*h]);
+    let S=[[0,0],[0,0]],b=[0,0];A.forEach((a,i)=>{S[0][0]+=a[0][0];S[0][1]+=a[0][1];S[1][0]+=a[1][0];S[1][1]+=a[1][1];const t=mv(a,o[i]);b[0]+=t[0];b[1]+=t[1];});
+    const det=S[0][0]*S[1][1]-S[0][1]*S[1][0],xs=[(S[1][1]*b[0]-S[0][1]*b[1])/det,(-S[1][0]*b[0]+S[0][0]*b[1])/det];
+    let x=[-2.4,-2.4],c=[0,0],ci=A.map(()=>[0,0]),traj=[x.slice()],paths=[];
+    for(let r=0;r<R;r++){const ys=[],cn=[];paths=[];
+     A.forEach((a,i)=>{let y=x.slice(),p=[y.slice()];for(let k=0;k<K;k++){let g=mv(a,[y[0]-o[i][0],y[1]-o[i][1]]);
+      if(M==="prox")g=[g[0]+mu*(y[0]-x[0]),g[1]+mu*(y[1]-x[1])];
+      if(M==="scaf")g=[g[0]-ci[i][0]+c[0],g[1]-ci[i][1]+c[1]];
+      y=[y[0]-eta*g[0],y[1]-eta*g[1]];p.push(y.slice());}
+      ys.push(y);paths.push(p);cn.push([ci[i][0]-c[0]+(x[0]-y[0])/(K*eta),ci[i][1]-c[1]+(x[1]-y[1])/(K*eta)]);});
+     x=[ys.reduce((s,y)=>s+y[0],0)/3,ys.reduce((s,y)=>s+y[1],0)/3];
+     if(M==="scaf"){ci=cn;c=[ci.reduce((s,v)=>s+v[0],0)/3,ci.reduce((s,v)=>s+v[1],0)/3];}
+     traj.push(x.slice());}
+    return{o,xs,traj,paths,x};}
+   function run(){
+    $("dr-hv").textContent=(+$("dr-h").value).toFixed(2);$("dr-kv").textContent=$("dr-k").value;$("dr-muv").textContent=(+$("dr-mu").value).toFixed(1);
+    $("dr-mu").parentNode.style.opacity=M==="prox"?1:.4;
+    document.querySelectorAll("#dr-m button").forEach(b=>{const on=b.dataset.m===M;b.style.background=on?"var(--ink)":"none";b.style.color=on?"var(--paper)":"var(--ink)";});
+    const W=cv.clientWidth,H=340,d=devicePixelRatio||1;cv.width=W*d;cv.height=H*d;ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,W,H);
+    const sc=Math.min(W,H)/6.2,cx=W/2,cy=H/2,P=p=>[cx+p[0]*sc,cy-p[1]*sc],s=sim();
+    ctx.strokeStyle=css("--rule");ctx.lineWidth=1;for(let g=-3;g<=3;g++){let a=P([g,-3]),e=P([g,3]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(e[0],e[1]);ctx.stroke();a=P([-3,g]);e=P([3,g]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(e[0],e[1]);ctx.stroke();}
+    ctx.strokeStyle=css("--curr");ctx.lineWidth=1.5;s.paths.forEach(p=>{ctx.beginPath();p.forEach((q,i)=>{const z=P(q);i?ctx.lineTo(z[0],z[1]):ctx.moveTo(z[0],z[1]);});ctx.stroke();});
+    ctx.strokeStyle=css("--volt");ctx.lineWidth=2.5;ctx.beginPath();s.traj.forEach((q,i)=>{const z=P(q);i?ctx.lineTo(z[0],z[1]):ctx.moveTo(z[0],z[1]);});ctx.stroke();
+    ctx.fillStyle=css("--volt");s.traj.forEach(q=>{const z=P(q);ctx.beginPath();ctx.arc(z[0],z[1],3.5,0,7);ctx.fill();});
+    ctx.fillStyle=css("--ok");s.o.forEach(q=>{const z=P(q);ctx.fillRect(z[0]-6,z[1]-6,12,12);});
+    const z=P(s.xs);ctx.fillStyle=css("--ink");ctx.beginPath();ctx.arc(z[0],z[1],7,0,7);ctx.fill();
+    $("dr-d").textContent=Math.hypot(s.x[0]-s.xs[0],s.x[1]-s.xs[1]).toFixed(3);$("dr-n").textContent={avg:"FedAvg",prox:"FedProx",scaf:"SCAFFOLD"}[M];
+   }
+   document.querySelectorAll("#dr-m button").forEach(b=>b.onclick=()=>{M=b.dataset.m;run();});
+   ["dr-h","dr-k","dr-mu"].forEach(i=>$(i).addEventListener("input",run));
+   addEventListener("resize",()=>{if(document.getElementById("dr-c"))run();});run();
+  }}
+};
+
+/* ============================================================
+   STORAGE
+   ============================================================ */
+const DB={
+ get(k,d){try{const v=localStorage.getItem("nip:"+k);return v?JSON.parse(v):d;}catch(e){return d;}},
+ set(k,v){try{localStorage.setItem("nip:"+k,JSON.stringify(v));}catch(e){}}
+};
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const app=document.getElementById("app"),crumb=document.getElementById("crumb");
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+const find=(s,u)=>{const S=SITE.subjects.find(x=>x.id===s);return[S,S&&S.units.find(x=>x.id===u)];};
+
+function heroSVG(){
+  let U=0,d="",T=120;
+  for(let n=0;n<=T;n++){
+    const x=(n/T*100).toFixed(2),y=(46-Math.min(U,1)*38).toFixed(2);
+    d+=(n?"L":"M")+x+" "+y+" ";
+    if(U>=1)U=0; U=.86*U+.22;
+  }
+  return `<svg viewBox="0 0 100 52" width="100%" preserveAspectRatio="none" style="height:120px;display:block" role="img" aria-label="A membrane voltage trace charging and resetting against a threshold line">
+    <line x1="0" y1="8" x2="100" y2="8" stroke="var(--spike)" stroke-width=".4" class="dash"/>
+    <line x1="0" y1="46" x2="100" y2="46" stroke="var(--rule-2)" stroke-width=".3"/>
+    <path d="${d}" fill="none" stroke="var(--volt)" stroke-width=".9" vector-effect="non-scaling-stroke" class="draw"/>
+  </svg>`;
+}
+
+function home(){
+  crumb.innerHTML="";
+  app.innerHTML=`<section class="hero">
+    <h1>${esc(SITE.title)}</h1>
+    <p>${esc(SITE.tagline)}</p>
+    <div class="trace-box">${heroSVG()}
+      <div class="trace-lab pop" style="animation-delay:2.4s">
+        <span><i style="background:var(--volt)"></i>membrane voltage</span>
+        <span><i style="background:var(--spike)"></i>firing threshold</span>
+      </div>
+    </div>
+  </section>
+  <h2 class="sec">Subjects</h2>
+  <div class="subj">${SITE.subjects.map(s=>{
+    const done=s.units.filter(u=>DB.get(`q:${s.id}:${u.id}`,null)!==null).length;
+    return `<a class="card" href="#/${s.id}"><h3>${esc(s.title)}</h3><p>${esc(s.blurb)}</p>
+     <div class="meta"><span>${s.units.length} unit${s.units.length>1?"s":""}</span>${done?`<span class="pill">${done} attempted</span>`:""}</div></a>`;
+  }).join("")}</div>`;
+}
+
+function subject(sid){
+  const[S]=find(sid);if(!S)return home();
+  crumb.innerHTML=`<span>/</span><b>${esc(S.title)}</b>`;
+  app.innerHTML=`<section class="hero" style="padding:44px 0 30px">
+    <h1 style="font-size:clamp(28px,5vw,40px)">${esc(S.title)}</h1><p>${esc(S.blurb)}</p></section>
+    <h2 class="sec">Units</h2><div class="subj">${S.units.map(u=>{
+      const sc=DB.get(`q:${sid}:${u.id}`,null);
+      return `<a class="unit" href="#/${sid}/${u.id}"><span class="unit-n">${esc(u.n)}</span>
+       <span style="flex:1;min-width:0"><h3>${esc(u.title)}</h3><p>${esc(u.blurb)}</p></span>
+       ${sc!==null?`<span class="pill">${sc.c}/${sc.t}</span>`:""}</a>`;
+    }).join("")}</div>`;
+}
+
+function unit(sid,uid,tab){
+  const[S,U]=find(sid,uid);if(!U)return subject(sid);
+  tab=tab||DB.get("tab","notes");DB.set("tab",tab);
+  crumb.innerHTML=`<span>/</span><a href="#/${sid}" style="text-decoration:none;color:var(--ink-3)">${esc(S.title)}</a><span>/</span><b>${esc(U.n)}</b>`;
+  app.innerHTML=`<section style="padding:36px 0 0">
+    <h1 style="font-size:clamp(26px,4.6vw,36px);letter-spacing:-.03em;margin:0 0 8px;line-height:1.12">${esc(U.title)}</h1>
+    <p style="font-family:'Source Serif 4',Georgia,serif;color:var(--ink-2);margin:0;max-width:56ch">${esc(U.blurb)}</p></section>
+    <div class="tabs" role="tablist">${[["notes","Notes"],["quiz","Quiz"],["cards","Flashcards"]].map(([k,l])=>
+      `<button class="tab" role="tab" aria-selected="${tab===k}" data-t="${k}">${l}</button>`).join("")}</div>
+    <div id="pane"></div>`;
+  app.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{location.hash=`#/${sid}/${uid}/${b.dataset.t}`;});
+  ({notes:()=>notes(U),quiz:()=>quiz(S,U),cards:()=>cards(U)}[tab]||(()=>notes(U)))();
+}
+
+function notes(U){
+  const p=document.getElementById("pane"),pend=[];
+  p.className="notes";
+  p.innerHTML=U.notes.map(b=>{
+    if(b.t==="h")return `<h3>${esc(b.v)}</h3>`;
+    if(b.t==="p")return `<p>${b.v}</p>`;
+    if(b.t==="eq")return `<div class="eq">${b.v}</div>`;
+    if(b.t==="note")return `<div class="note-box ${b.class||""}">${b.v}</div>`;
+    if(b.t==="tbl")return `<table class="tbl"><thead><tr>${b.v[0].map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${b.v.slice(1).map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+    if(b.t==="widget"&&WIDGETS[b.v]){pend.push(b.v);return `<div class="w">${WIDGETS[b.v].html}</div>`;}
+    return "";
+  }).join("");
+  pend.forEach(k=>{try{WIDGETS[k].init();}catch(e){console.error(k,e);}});
+}
+
+function quiz(S,U){
+  const p=document.getElementById("pane");p.className="q";
+  let i=0,correct=0,answered=false;
+  function draw(){
+    if(i>=U.quiz.length){
+      DB.set(`q:${S.id}:${U.id}`,{c:correct,t:U.quiz.length});
+      p.innerHTML=`<div class="score"><b>${correct}/${U.quiz.length}</b>
+        <p>${correct===U.quiz.length?"Every one. This material is solid.":correct>=U.quiz.length*.7?"Close. Look again at the ones you missed.":"Worth another pass through the notes before retrying."}</p>
+        <button class="btn" id="again">Start over</button></div>`;
+      document.getElementById("again").onclick=()=>{i=0;correct=0;draw();};return;
+    }
+    const q=U.quiz[i];answered=false;
+    p.innerHTML=`<div class="q-top"><span>Question ${i+1} of ${U.quiz.length}</span><span>${correct} right</span></div>
+      <div class="q-bar"><i style="width:${i/U.quiz.length*100}%"></i></div>
+      <p class="q-p">${esc(q.q)}</p>
+      <div id="opts">${q.o.map((o,k)=>`<button class="opt" data-k="${k}">${esc(o)}</button>`).join("")}</div>
+      ${q.h?`<button class="hint" id="hint">Need a hint?</button>`:""}
+      <div id="after"></div>`;
+    const hb=document.getElementById("hint");
+    if(hb)hb.onclick=()=>{hb.outerHTML=`<p style="color:var(--ink-3);font-size:14px;font-family:'Source Serif 4',serif">${esc(q.h)}</p>`;};
+    p.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+      if(answered)return;answered=true;
+      const k=+b.dataset.k,ok=k===q.a;if(ok)correct++;
+      p.querySelectorAll(".opt").forEach((x,n)=>{x.disabled=true;if(n===q.a)x.classList.add("right");else if(n===k)x.classList.add("wrong");});
+      document.getElementById("after").innerHTML=`<div class="expl"><b>${ok?"That's right.":"Not quite."}</b> ${esc(q.e)}</div>
+        <button class="btn" id="next">${i===U.quiz.length-1?"See score":"Next question"}</button>`;
+      document.getElementById("next").onclick=()=>{i++;draw();};
+    });
+  }
+  draw();
+}
+
+function cards(U){
+  const p=document.getElementById("pane");p.className="fc-wrap";
+  let i=0,flip=false;
+  function draw(){
+    const c=U.cards[i];
+    p.innerHTML=`<div class="fc" id="fc" tabindex="0" role="button" aria-label="Flip card">
+        <span class="fc-side">${flip?"answer":"prompt"}</span>
+        <div class="${flip?"fc-a":"fc-q"}">${flip?c.b:esc(c.f)}</div>
+      </div>
+      <div class="fc-nav"><button id="pv" ${i===0?"disabled":""}>Back</button>
+        <span>${i+1} / ${U.cards.length} — tap to flip</span>
+        <button id="nx" ${i===U.cards.length-1?"disabled":""}>Next</button></div>`;
+    const f=document.getElementById("fc");
+    f.onclick=()=>{flip=!flip;draw();};
+    f.onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();flip=!flip;draw();}};
+    document.getElementById("pv").onclick=()=>{if(i>0){i--;flip=false;draw();}};
+    document.getElementById("nx").onclick=()=>{if(i<U.cards.length-1){i++;flip=false;draw();}};
+  }
+  draw();
+  document.addEventListener("keydown",function h(e){
+    if(!document.getElementById("fc"))return document.removeEventListener("keydown",h);
+    if(e.key==="ArrowRight")document.getElementById("nx")?.click();
+    if(e.key==="ArrowLeft")document.getElementById("pv")?.click();
+  });
+}
+
+/* ---------- router ---------- */
+function route(){
+  const p=location.hash.replace(/^#\/?/,"").split("/").filter(Boolean);
+  window.scrollTo(0,0);
+  if(!p.length)home();else if(p.length===1)subject(p[0]);else unit(p[0],p[1],p[2]);
+}
+addEventListener("hashchange",route);
+
+/* ---------- theme ---------- */
+const tb=document.getElementById("theme");
+const saved=DB.get("theme",null);if(saved)document.documentElement.dataset.theme=saved;
+tb.onclick=()=>{
+  const cur=document.documentElement.dataset.theme
+    ||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
+  const nx=cur==="dark"?"light":"dark";
+  document.documentElement.dataset.theme=nx;DB.set("theme",nx);
+};
+
+route();
+</script>
+
+<div style="max-width:1080px;margin:0 auto;padding:0 20px"><footer>
+  Built by Hasti Zanganeh &middot; <a href="https://github.com/Hasti-zanganeh/study-with-me" style="color:var(--ink-2)">source on GitHub</a><br>Progress is saved in your own browser and never leaves it.
+</footer></div>
+</body>
 </html>
