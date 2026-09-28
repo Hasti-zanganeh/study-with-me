@@ -4,7 +4,7 @@ Open study notes, written while learning and shared as they go.
 
 Each unit has three parts: **notes** with live interactive diagrams you can play with, a **quiz** to test recall, and **flashcards** for drilling. Everything runs in the browser — no accounts, no tracking, no server.
 
-**Live site:** https://YOURUSERNAME.github.io
+**Live site:** https://Hasti-zanganeh.github.io
 
 ---
 
